@@ -1,0 +1,399 @@
+.page {
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--c-white);
+}
+
+.topbarInner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brandTitle {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -0.8px;
+  line-height: 1.05;
+}
+
+.brandMeta {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.pillGreen {
+  background: var(--c-green-49);
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--c-blue-26);
+  display: grid;
+  place-items: center;
+}
+
+.avatarIcon {
+  width: 28px;
+  height: 28px;
+}
+
+.profileText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profileName {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.profileRole {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.logout {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.logoutIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.divider {
+  height: 2px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 60px 24px 40px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.iconButton {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--c-white);
+  box-shadow: var(--shadow-chip);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.iconButtonIcon {
+  width: 22px;
+  height: 14px;
+}
+
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.seg {
+  border: 0;
+  background: var(--c-white);
+  color: rgba(0, 0, 0, 0.75);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.segActive {
+  background: var(--c-blue);
+  color: var(--c-white);
+}
+
+.card {
+  background: var(--c-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 18px 18px 10px;
+}
+
+.tableScroll {
+  max-height: 420px;
+  overflow: auto;
+  border-radius: 12px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 860px;
+}
+
+.table th,
+.table td {
+  padding: 16px 18px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.table th {
+  color: rgba(0, 0, 0, 0.55);
+  font-weight: 500;
+  text-align: left;
+}
+
+.theadRow th {
+  position: sticky;
+  top: 0;
+  background: var(--c-white);
+  z-index: 2;
+}
+
+.tbodyRow td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.cellRight {
+  text-align: right;
+}
+
+.tfootRow td {
+  position: sticky;
+  bottom: 0;
+  background: var(--c-white);
+  z-index: 1;
+  padding-top: 18px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.totalLabel {
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.totalAmount {
+  font-weight: 600;
+}
+
+.exportRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 34px;
+}
+
+.exportButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.exportIcon {
+  width: 22px;
+  height: 22px;
+}
+
+.exportFormats {
+  display: inline-flex;
+  gap: 18px;
+}
+
+.formatButton {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  border: 0;
+  background: var(--c-white);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.formatIcon {
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 1180px) {
+  .topbarInner,
+  .content {
+    max-width: 100%;
+  }
+}
+
+/* Tablet layout ~834px */
+@media (max-width: 900px) {
+  .topbarInner {
+    flex-direction: row;
+    align-items: flex-start;
+    padding-inline: 20px;
+  }
+
+  .brandTitle {
+    font-size: 32px;
+  }
+
+  .brandMeta {
+    margin-top: 10px;
+    gap: 10px;
+  }
+
+  .content {
+    padding: 40px 20px 32px;
+  }
+
+  .sectionHeader {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .exportRow {
+    flex-direction: row;
+  }
+}
+
+/* Mobile layout ~440px */
+@media (max-width: 480px) {
+  .topbarInner {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    padding: 20px 16px 14px;
+    gap: 12px;
+  }
+
+  .brandTitle {
+    font-size: 26px;
+  }
+
+  .pill {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .profile {
+    justify-content: flex-end;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .content {
+    padding: 32px 16px 28px;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .controls {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 18px;
+  }
+
+  .segmented {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .seg {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+
+  .card {
+    padding: 14px 12px 8px;
+  }
+
+  .tableScroll {
+    max-height: 360px;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+
+  .exportRow {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .exportFormats {
+    gap: 14px;
+  }
+
+  .formatButton {
+    width: 48px;
+    height: 48px;
+  }
+}

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx'
+import * as XLSX from 'xlsx'
 import './App.css'
 
 type PaymentRow = {
@@ -285,65 +287,85 @@ function buildCsv(rows: PaymentRow[], rangeLabel: string): string {
   return [titleLine, periodLine, '', header.join(','), ...body].join('\r\n')
 }
 
-function buildTsvForExcel(rows: PaymentRow[], rangeLabel: string): string {
+function buildXlsxBlob(rows: PaymentRow[], rangeLabel: string): Blob {
   const header = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
-  const headerLine = header.join('\t')
-  const bodyLines = rows.map((r) =>
-    [r.id, r.date, r.name, r.phone, r.amount].join('\t'),
-  )
-  // Top two rows for title + period (Excel will keep them as their own rows)
-  return ['Milestone Fraternity', rangeLabel, '', headerLine, ...bodyLines].join('\r\n')
+  const body = rows.map((r) => [r.id, r.date, r.name, r.phone, parseAmount(r.amount)])
+  const total = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
+  const sheetRows = [
+    ['Milestone Fraternity'],
+    [rangeLabel],
+    [],
+    header,
+    ...body,
+    [],
+    ['', '', '', 'Total', total],
+  ]
+
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetRows)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Payments')
+  const workbookBytes = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
+  return new Blob([workbookBytes], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
 }
 
-function buildHtmlTable(rows: PaymentRow[], rangeLabel: string): string {
-  const headerCells = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
-  const headerRow = headerCells
-    .map((text) => `<th style="padding:8px 12px;border:1px solid #e5e5e5;text-align:left;">${text}</th>`)
-    .join('')
-
-  const bodyRows = rows
-    .map(
-      (r) => `<tr>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;">${r.id}</td>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;">${r.date}</td>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;">${r.name}</td>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;">${r.phone}</td>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;text-align:right;">${r.amount}</td>
-</tr>`,
-    )
-    .join('')
-
+async function buildDocxBlob(rows: PaymentRow[], rangeLabel: string): Promise<Blob> {
+  const header = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
   const total = formatAmount(rows.reduce((sum, row) => sum + parseAmount(row.amount), 0))
 
-  const totalRow = `<tr>
-<td colspan="4" style="padding:8px 12px;border:1px solid #e5e5e5;text-align:right;font-weight:600;">Total</td>
-<td style="padding:8px 12px;border:1px solid #e5e5e5;text-align:right;font-weight:600;">${total}</td>
-</tr>`
+  const headerRow = new TableRow({
+    children: header.map(
+      (cell) =>
+        new TableCell({
+          children: [new Paragraph({ children: [new TextRun({ text: cell, bold: true })] })],
+        }),
+    ),
+  })
 
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Milestone Fraternity – ${rangeLabel}</title>
-  </head>
-  <body style="font-family: Arial, sans-serif; font-size: 14px;">
-    <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;min-width:640px;">
-      <tr>
-        <th colspan="5" style="padding:12px 12px 4px;text-align:left;font-size:18px;">
-          <strong>Milestone Fraternity</strong>
-        </th>
-      </tr>
-      <tr>
-        <th colspan="5" style="padding:0 12px 12px;text-align:left;font-size:13px;font-weight:400;">
-          ${rangeLabel}
-        </th>
-      </tr>
-      <tr>${headerRow}</tr>
-      ${bodyRows}
-      ${totalRow}
-    </table>
-  </body>
-</html>`
+  const bodyRows = rows.map(
+    (row) =>
+      new TableRow({
+        children: [row.id, row.date, row.name, row.phone, row.amount].map(
+          (cell) =>
+            new TableCell({
+              children: [new Paragraph(String(cell))],
+            }),
+        ),
+      }),
+  )
+
+  const totalRow = new TableRow({
+    children: [
+      new TableCell({ children: [new Paragraph('')] }),
+      new TableCell({ children: [new Paragraph('')] }),
+      new TableCell({ children: [new Paragraph('')] }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: 'Total', bold: true })] })],
+      }),
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: total, bold: true })] })],
+      }),
+    ],
+  })
+
+  const doc = new Document({
+    sections: [
+      {
+        children: [
+          new Paragraph({ text: 'Milestone Fraternity' }),
+          new Paragraph({ text: rangeLabel }),
+          new Paragraph({ text: '' }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [headerRow, ...bodyRows, totalRow],
+          }),
+        ],
+      },
+    ],
+  })
+
+  return Packer.toBlob(doc)
 }
 
 function buildPdf(rows: PaymentRow[], rangeLabel: string) {
@@ -393,6 +415,10 @@ function buildPdf(rows: PaymentRow[], rangeLabel: string) {
 
 function download(text: string, filename: string, mime: string) {
   const blob = new Blob([text], { type: mime })
+  downloadBlob(blob, filename)
+}
+
+function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -423,26 +449,18 @@ function App() {
     [rows],
   )
 
-  const handleExport = (type: 'csv' | 'xls' | 'doc' | 'pdf') => {
+  const handleExport = async (type: 'csv' | 'xls' | 'doc' | 'pdf') => {
     const rangeLabel = getRangeLabel(range)
     const csv = buildCsv(rows, rangeLabel)
-    const tsv = buildTsvForExcel(rows, rangeLabel)
-    const html = buildHtmlTable(rows, rangeLabel)
+    const xlsxBlob = buildXlsxBlob(rows, rangeLabel)
     const timestamp = new Date().toISOString().slice(0, 10)
     if (type === 'csv') {
       download(csv, `received-payments-${timestamp}.csv`, 'text/csv;charset=utf-8;')
     } else if (type === 'xls') {
-      download(
-        tsv,
-        `received-payments-${timestamp}.xls`,
-        'application/vnd.ms-excel;charset=utf-8;',
-      )
+      downloadBlob(xlsxBlob, `received-payments-${timestamp}.xlsx`)
     } else if (type === 'doc') {
-      download(
-        html,
-        `received-payments-${timestamp}.doc`,
-        'application/msword;charset=utf-8;',
-      )
+      const docxBlob = await buildDocxBlob(rows, rangeLabel)
+      downloadBlob(docxBlob, `received-payments-${timestamp}.docx`)
     } else {
       const doc = buildPdf(rows, rangeLabel)
       doc.save(`received-payments-${timestamp}.pdf`)

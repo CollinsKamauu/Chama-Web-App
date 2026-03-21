@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
 import './AuthPages.css'
 
 const logoUrl = new URL('../assets/auth/Chama App Demo Logo 1.svg', import.meta.url).href
@@ -31,7 +31,6 @@ function AuthHero() {
 
 export default function SignupPage() {
   const navigate = useNavigate()
-  const { signup } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,13 +38,17 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      await signup(name.trim(), email.trim(), password)
-      navigate('/login?registered=1', { replace: true })
+      const data = await api.post('/api/auth/register', { name: name.trim(), email: email.trim(), password })
+      if (data.success) {
+        navigate('/login?registered=1', { replace: true })
+      } else {
+        setError(data.message ?? 'Registration failed')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -62,7 +65,7 @@ export default function SignupPage() {
           <p className="authTagline">Pamoja Twaweza</p>
         </div>
 
-        <form className="authForm" onSubmit={handleSubmit} noValidate>
+        <form className="authForm" onSubmit={handleRegister} noValidate>
           {error ? <div className="authError">{error}</div> : null}
 
           <div className="authField">
@@ -124,7 +127,14 @@ export default function SignupPage() {
           </div>
 
           <button className="authSubmit" type="submit" disabled={loading}>
-            {loading ? 'Creating account…' : 'Sign up'}
+            {loading ? (
+              <>
+                <span className="authSpinner" aria-hidden="true" />
+                Creating account...
+              </>
+            ) : (
+              'Sign up'
+            )}
           </button>
         </form>
 

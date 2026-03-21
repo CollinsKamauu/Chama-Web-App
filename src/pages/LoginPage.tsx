@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
 import './AuthPages.css'
 
 const logoUrl = new URL('../assets/auth/Chama App Demo Logo 1.svg', import.meta.url).href
@@ -32,7 +32,6 @@ function AuthHero() {
 export default function LoginPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -41,13 +40,20 @@ export default function LoginPage() {
 
   const registered = params.get('registered') === '1'
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      await login(email.trim(), password)
-      navigate('/', { replace: true })
+      const data = await api.post('/api/auth/login', { email: email.trim(), password })
+      if (data.success && typeof data.token === 'string') {
+        localStorage.setItem('chama_token', data.token)
+        localStorage.setItem('chama_email', email.trim())
+        navigate('/', { replace: true })
+        window.location.reload()
+      } else {
+        setError(data.message ?? 'Login failed')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -64,7 +70,7 @@ export default function LoginPage() {
           <p className="authTagline">Pamoja Twaweza</p>
         </div>
 
-        <form className="authForm" onSubmit={handleSubmit} noValidate>
+        <form className="authForm" onSubmit={handleLogin} noValidate>
           {registered ? (
             <p className="authError" style={{ background: 'rgba(32, 112, 210, 0.1)', color: '#1a5cb3' }}>
               Account created. Log in with your email and password.
@@ -114,7 +120,14 @@ export default function LoginPage() {
           </div>
 
           <button className="authSubmit" type="submit" disabled={loading}>
-            {loading ? 'Logging in…' : 'Log in'}
+            {loading ? (
+              <>
+                <span className="authSpinner" aria-hidden="true" />
+                Logging in...
+              </>
+            ) : (
+              'Log in'
+            )}
           </button>
         </form>
 

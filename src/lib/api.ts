@@ -1,24 +1,58 @@
-const BASE_URL = import.meta.env.VITE_API_URL;
+import { getApiBaseUrl } from '../api/auth'
+
+type ApiResponse<T = unknown> = {
+  success: boolean
+  message?: string
+  token?: string
+  data?: T
+  [key: string]: unknown
+}
+
+async function parseJson(response: Response): Promise<Record<string, unknown>> {
+  return (await response.json().catch(() => ({}))) as Record<string, unknown>
+}
+
+function toErrorMessage(payload: Record<string, unknown>, fallback: string): string {
+  const message = payload.message ?? payload.error
+  if (typeof message === 'string' && message.trim()) return message
+  return fallback
+}
 
 export const api = {
-  post: async (path: string, body: object, token?: string) => {
-    const res = await fetch(`${BASE_URL}${path}`, {
+  async post<T = unknown>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
+    const response = await fetch(`${getApiBaseUrl()}${path}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
-      body: JSON.stringify(body)
-    });
-    return res.json();
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const payload = await parseJson(response)
+    if (!response.ok) {
+      return {
+        success: false,
+        message: toErrorMessage(payload, `Request failed (${response.status})`),
+      }
+    }
+    return {
+      success: true,
+      ...(payload as ApiResponse<T>),
+    }
   },
 
-  get: async (path: string, token?: string) => {
-    const res = await fetch(`${BASE_URL}${path}`, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` })
+  async get<T = unknown>(path: string, token?: string): Promise<ApiResponse<T>> {
+    const response = await fetch(`${getApiBaseUrl()}${path}`, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    const payload = await parseJson(response)
+    if (!response.ok) {
+      return {
+        success: false,
+        message: toErrorMessage(payload, `Request failed (${response.status})`),
       }
-    });
-    return res.json();
-  }
-};
+    }
+    return {
+      success: true,
+      ...(payload as ApiResponse<T>),
+    }
+  },
+}

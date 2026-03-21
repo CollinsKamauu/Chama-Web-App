@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx'
 import * as XLSX from 'xlsx'
 import { useAuth } from '../context/AuthContext'
+import { api } from '../lib/api'
 import '../App.css'
 
 type PaymentRow = {
@@ -435,6 +436,24 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const [range, setRange] = useState<DateRangeKey>('7')
+  const [, setMembers] = useState<unknown[]>([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('chama_token')
+      if (!token) {
+        navigate('/login', { replace: true })
+        return
+      }
+
+      const data = await api.get<unknown[]>('/api/members', token)
+      if (data.success && Array.isArray(data.data)) {
+        setMembers(data.data)
+      }
+    }
+
+    void fetchData()
+  }, [navigate])
 
   const rows = useMemo(() => {
     const today = new Date()
@@ -471,6 +490,12 @@ export default function HomePage() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('chama_token')
+    logout()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="page">
       <header className="topbar">
@@ -497,10 +522,7 @@ export default function HomePage() {
               <button
                 className="logout"
                 type="button"
-                onClick={() => {
-                  logout()
-                  navigate('/login', { replace: true })
-                }}
+                onClick={handleLogout}
               >
                 <img
                   className="logoutIcon"

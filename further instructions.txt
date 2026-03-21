@@ -1,0 +1,94 @@
+─────────────────────────────────────
+STEP 2 — Login page component
+─────────────────────────────────────
+At the top of your Login page file, add this import:
+
+  import { api } from '../lib/api';
+
+Then find your form submit function and replace it with this:
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    const data = await api.post('/api/auth/login', { email, password });
+    if (data.success) {
+      localStorage.setItem('chama_token', data.token);
+      navigate('/dashboard'); // change '/dashboard' to wherever you redirect after login
+    } else {
+      setError(data.message); // or however you display errors in your UI
+    }
+  };
+
+─────────────────────────────────────
+STEP 3 — Register/Signup page component
+─────────────────────────────────────
+At the top of your Signup page file, add this import:
+
+  import { api } from '../lib/api';
+
+Then find your form submit function and replace it with this:
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    const data = await api.post('/api/auth/register', { email, password });
+    if (data.success) {
+      navigate('/login'); // redirect to login after successful registration
+    } else {
+      setError(data.message);
+    }
+  };
+
+─────────────────────────────────────
+STEP 4 — Dashboard (or any page that shows data)
+─────────────────────────────────────
+At the top of your Dashboard file, add this import:
+
+  import { api } from '../lib/api';
+
+Then inside your useEffect (where you load data), add:
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('chama_token');
+      
+      if (!token) {
+        navigate('/login'); // redirect if not logged in
+        return;
+      }
+
+      const data = await api.get('/api/members', token);
+      if (data.success) {
+        setMembers(data.data); // or however you store members in your state
+      }
+    };
+
+    fetchData();
+  }, []);
+
+─────────────────────────────────────
+STEP 5 — Logout button
+─────────────────────────────────────
+Find your logout button and add this function:
+
+  const handleLogout = () => {
+    localStorage.removeItem('chama_token');
+    navigate('/login');
+  };
+
+Then make sure your logout button calls it:
+
+  <button onClick={handleLogout}>Logout</button>
+
+─────────────────────────────────────
+IMPORTANT NOTES
+─────────────────────────────────────
+1. The path '../lib/api' assumes your page files are inside src/pages/
+   or src/components/. If your file structure is different, adjust the
+   import path accordingly.
+   e.g. if your file is directly in src/ use './lib/api'
+
+2. After adding the Netlify environment variable, you MUST redeploy
+   the site on Netlify for it to take effect.
+   Go to Netlify → Deploys → Trigger deploy → Deploy site.
+
+3. Share your file structure with me if you're unsure where to put things
+   and I'll give you the exact paths.

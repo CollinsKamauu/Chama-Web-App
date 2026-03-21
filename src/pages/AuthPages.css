@@ -84,6 +84,16 @@
   text-align: center;
 }
 
+@media (max-width: 439px) {
+  .authAppName {
+    font-size: 24px;
+  }
+
+  .authTagline {
+    font-size: 20px;
+  }
+}
+
 .authForm {
   display: flex;
   flex-direction: column;

@@ -8,6 +8,8 @@ type ApiResponse<T = unknown> = {
   [key: string]: unknown
 }
 
+type ApiPayload<T = unknown> = Omit<ApiResponse<T>, 'success'>
+
 async function parseJson(response: Response): Promise<Record<string, unknown>> {
   return (await response.json().catch(() => ({}))) as Record<string, unknown>
 }
@@ -32,9 +34,10 @@ export const api = {
         message: toErrorMessage(payload, `Request failed (${response.status})`),
       }
     }
+    const apiPayload = payload as ApiPayload<T>
     return {
+      ...apiPayload,
       success: true,
-      ...(payload as ApiResponse<T>),
     }
   },
 
@@ -50,9 +53,10 @@ export const api = {
         message: toErrorMessage(payload, `Request failed (${response.status})`),
       }
     }
+    const apiPayload = payload as ApiPayload<T>
     return {
+      ...apiPayload,
       success: true,
-      ...(payload as ApiResponse<T>),
     }
   },
 }

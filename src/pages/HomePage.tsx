@@ -705,16 +705,19 @@ export default function HomePage() {
     const csv = buildCsv(rows, rangeLabel, modeLabel, downloadedAt)
     const xlsxBlob = buildXlsxBlob(rows, rangeLabel, modeLabel, downloadedAt)
     const timestamp = new Date().toISOString().slice(0, 10)
+    const chamaName = 'Milestone Fraternity'
+    const chamaSlug = chamaName.replace(/\s+/g, '-')
+    const fileBase = `${chamaSlug}-received-payments-${timestamp}`
     if (type === 'csv') {
-      download(csv, `received-payments-${timestamp}.csv`, 'text/csv;charset=utf-8;')
+      download(csv, `${fileBase}.csv`, 'text/csv;charset=utf-8;')
     } else if (type === 'xls') {
-      downloadBlob(xlsxBlob, `received-payments-${timestamp}.xlsx`)
+      downloadBlob(xlsxBlob, `${fileBase}.xlsx`)
     } else if (type === 'doc') {
       const docxBlob = await buildDocxBlob(rows, rangeLabel, modeLabel, downloadedAt)
-      downloadBlob(docxBlob, `received-payments-${timestamp}.docx`)
+      downloadBlob(docxBlob, `${fileBase}.docx`)
     } else {
       const doc = buildPdf(rows, rangeLabel, modeLabel, downloadedAt)
-      doc.save(`received-payments-${timestamp}.pdf`)
+      doc.save(`${fileBase}.pdf`)
     }
   }
 

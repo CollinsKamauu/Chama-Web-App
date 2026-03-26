@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -280,23 +280,43 @@ function getRangeLabel(range: DateRangeKey): string {
   return 'Last 3 months'
 }
 
-function buildCsv(rows: PaymentRow[], rangeLabel: string): string {
+function formatDownloadedAt(d: Date): string {
+  // Kenyan formatting, keep time in 24h.
+  try {
+    return d.toLocaleString('en-KE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  } catch {
+    return d.toISOString()
+  }
+}
+
+function buildCsv(rows: PaymentRow[], rangeLabel: string, modeLabel: string, downloadedAt: string): string {
   const header = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
   const titleLine = 'Milestone Fraternity'
   const periodLine = rangeLabel
+  const modeLine = `Mode: ${modeLabel}`
+  const downloadedAtLine = `Downloaded: ${downloadedAt}`
   const body = rows.map((r) =>
     [r.id, r.date, r.name, r.phone, r.amount].map((cell) => `"${cell}"`).join(','),
   )
-  return [titleLine, periodLine, '', header.join(','), ...body].join('\r\n')
+  return [titleLine, periodLine, modeLine, downloadedAtLine, '', header.join(','), ...body].join('\r\n')
 }
 
-function buildXlsxBlob(rows: PaymentRow[], rangeLabel: string): Blob {
+function buildXlsxBlob(rows: PaymentRow[], rangeLabel: string, modeLabel: string, downloadedAt: string): Blob {
   const header = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
   const body = rows.map((r) => [r.id, r.date, r.name, r.phone, parseAmount(r.amount)])
   const total = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)
   const sheetRows = [
     ['Milestone Fraternity'],
     [rangeLabel],
+    [`Mode: ${modeLabel}`],
+    [`Downloaded: ${downloadedAt}`],
     [],
     header,
     ...body,
@@ -313,7 +333,12 @@ function buildXlsxBlob(rows: PaymentRow[], rangeLabel: string): Blob {
   })
 }
 
-async function buildDocxBlob(rows: PaymentRow[], rangeLabel: string): Promise<Blob> {
+async function buildDocxBlob(
+  rows: PaymentRow[],
+  rangeLabel: string,
+  modeLabel: string,
+  downloadedAt: string,
+): Promise<Blob> {
   const header = ['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']
   const total = formatAmount(rows.reduce((sum, row) => sum + parseAmount(row.amount), 0))
 
@@ -358,6 +383,8 @@ async function buildDocxBlob(rows: PaymentRow[], rangeLabel: string): Promise<Bl
         children: [
           new Paragraph({ text: 'Milestone Fraternity' }),
           new Paragraph({ text: rangeLabel }),
+          new Paragraph({ text: `Mode: ${modeLabel}` }),
+          new Paragraph({ text: `Downloaded: ${downloadedAt}` }),
           new Paragraph({ text: '' }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
@@ -371,7 +398,7 @@ async function buildDocxBlob(rows: PaymentRow[], rangeLabel: string): Promise<Bl
   return Packer.toBlob(doc)
 }
 
-function buildPdf(rows: PaymentRow[], rangeLabel: string) {
+function buildPdf(rows: PaymentRow[], rangeLabel: string, modeLabel: string, downloadedAt: string) {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'pt',
@@ -383,12 +410,14 @@ function buildPdf(rows: PaymentRow[], rangeLabel: string) {
 
   doc.setFontSize(11)
   doc.text(rangeLabel, 40, 60)
+  doc.text(`Mode: ${modeLabel}`, 40, 75)
+  doc.text(`Downloaded: ${downloadedAt}`, 40, 90)
 
   const head = [['Transaction ID', 'Date', 'Name', 'Phone Number', 'Amount']]
   const body = rows.map((r) => [r.id, r.date, r.name, r.phone, r.amount])
 
   autoTable(doc, {
-    startY: 80,
+    startY: 110,
     head,
     body,
     styles: {
@@ -436,13 +465,116 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const [range, setRange] = useState<DateRangeKey>('7')
-  const [, setMembers] = useState<unknown[]>([])
+  const [members, setMembers] = useState<unknown[]>([])
+  const [liveDemoEnabled, setLiveDemoEnabled] = useState(false)
+  const [liveDemoRows, setLiveDemoRows] = useState<PaymentRow[]>([])
+  const liveDemoCounterRef = useRef(1)
+
+  function normalizeToDdMmYyyy(value: unknown): string | null {
+    if (typeof value === 'string') {
+      // 1) dd/mm/yyyy
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) return value
+
+      // 2) ISO or RFC date strings
+      const asDate = new Date(value)
+      if (!isNaN(asDate.getTime())) {
+        const day = String(asDate.getDate()).padStart(2, '0')
+        const month = String(asDate.getMonth() + 1).padStart(2, '0')
+        const year = asDate.getFullYear()
+        return `${day}/${month}/${year}`
+      }
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      const asDate = new Date(value)
+      if (!isNaN(asDate.getTime())) {
+        const day = String(asDate.getDate()).padStart(2, '0')
+        const month = String(asDate.getMonth() + 1).padStart(2, '0')
+        const year = asDate.getFullYear()
+        return `${day}/${month}/${year}`
+      }
+    }
+
+    return null
+  }
+
+  function normalizeAmountToDisplay(value: unknown): string | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return formatAmount(value)
+    }
+
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/,/g, '').trim()
+      const n = Number(cleaned)
+      if (Number.isFinite(n)) return formatAmount(n)
+      // If it already looks like a formatted amount, keep it.
+      if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(value)) return value
+    }
+
+    return null
+  }
+
+  function normalizePaymentRow(raw: unknown, idx: number): PaymentRow | null {
+    if (!raw || typeof raw !== 'object') return null
+    const obj = raw as Record<string, unknown>
+
+    const id =
+      (typeof obj.id === 'string' && obj.id) ||
+      (typeof obj.transactionId === 'string' && obj.transactionId) ||
+      (typeof obj.transId === 'string' && obj.transId) ||
+      (typeof obj.TransID === 'string' && obj.TransID) ||
+      `tx-${idx}`
+
+    const dateRaw =
+      obj.date ?? obj.transactionDate ?? obj.createdAt ?? obj.timestamp ?? obj.TransTime ?? obj.transaction_time
+    const date = normalizeToDdMmYyyy(dateRaw)
+    if (!date) return null
+
+    const name =
+      (typeof obj.name === 'string' && obj.name) ||
+      (typeof obj.customerName === 'string' && obj.customerName) ||
+      (typeof obj.fullName === 'string' && obj.fullName) ||
+      'Member'
+
+    const phone =
+      (typeof obj.phone === 'string' && obj.phone) ||
+      (typeof obj.msisdn === 'string' && obj.msisdn) ||
+      (typeof obj.MSISDN === 'string' && obj.MSISDN) ||
+      ''
+
+    const amountRaw =
+      obj.amount ??
+      obj.receivedAmount ??
+      obj.amountReceived ??
+      obj.transactionAmount ??
+      obj.TransAmount ??
+      obj.transAmount
+    const amount = normalizeAmountToDisplay(amountRaw)
+    if (!amount) return null
+
+    return { id, date, name, phone, amount }
+  }
+
+  function looksLikeC2B(raw: unknown): boolean {
+    if (!raw || typeof raw !== 'object') return false
+    const obj = raw as Record<string, unknown>
+    return (
+      'TransID' in obj ||
+      'transId' in obj ||
+      'BillRefNumber' in obj ||
+      'billRefNumber' in obj ||
+      'MSISDN' in obj ||
+      'msisdn' in obj
+    )
+  }
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem('chama_token')
       if (!token) {
-        navigate('/login', { replace: true })
+        if (!import.meta.env.DEV) {
+          navigate('/login', { replace: true })
+        }
         return
       }
 
@@ -453,19 +585,113 @@ export default function HomePage() {
     }
 
     void fetchData()
+
+    const intervalId = window.setInterval(() => {
+      void fetchData()
+    }, 5000)
+
+    return () => window.clearInterval(intervalId)
   }, [navigate])
 
+  const generateLiveDemoPayment = (seq: number): PaymentRow => {
+    const names = [
+      'Juma Yusuf',
+      'Michael Mathu',
+      'Joy Rono',
+      'Eric Kantai',
+      'Mary Wambui',
+      'Brian Otieno',
+      'Sarah Njeri',
+      'Bashir Suleiman',
+      'Lucy Wanjiru',
+      'Peter Kariuki',
+      'Ann Chebet',
+      'George Ouma',
+      'Grace Wairimu',
+      'Samuel Kibet',
+      'Felix Mutua',
+    ]
+
+    const now = Date.now()
+    // Spread across the last 90 days so the duration filters show results.
+    const daysAgo = seq % 90
+    const date = new Date(now - daysAgo * 24 * 60 * 60 * 1000 - (seq % 12) * 60 * 60 * 1000)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    const ddmmyyyy = `${day}/${month}/${year}`
+
+    const txId = `demo-${now}-${seq}`
+
+    // Unique phone per sequence (keeps +2547XXXXXXXX format)
+    const base = 20000000
+    const phoneSuffix = String((base + seq) % 100000000).padStart(8, '0')
+    const phone = `+2547${phoneSuffix}`
+
+    const name = names[seq % names.length] ?? 'Member'
+
+    const amountNumber = 500 + ((seq * 137) % 24500)
+    const amount = amountNumber.toLocaleString('en-KE')
+
+    return { id: txId, date: ddmmyyyy, name, phone, amount }
+  }
+
+  useEffect(() => {
+    if (!liveDemoEnabled) {
+      setLiveDemoRows([])
+      return
+    }
+
+    // Seed with a few entries so the table isn't empty immediately.
+    const seedSeq = liveDemoCounterRef.current
+    const initial = [0, 1, 2, 3, 4].map((i) => generateLiveDemoPayment(seedSeq + i))
+    liveDemoCounterRef.current = seedSeq + initial.length
+    setLiveDemoRows(initial)
+
+    const intervalId = window.setInterval(() => {
+      const seq = liveDemoCounterRef.current
+      liveDemoCounterRef.current += 1
+      const next = generateLiveDemoPayment(seq)
+      setLiveDemoRows((prev) => [next, ...prev].slice(0, 200))
+    }, 10000)
+
+    return () => window.clearInterval(intervalId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveDemoEnabled])
+
+  const normalizedPayments = useMemo(() => {
+    const normalized = members
+      .map((item, idx) => {
+        const row = normalizePaymentRow(item, idx)
+        if (!row) return null
+        const obj = item as Record<string, unknown>
+        const billRef = (typeof obj.BillRefNumber === 'string' && obj.BillRefNumber) || ''
+        const isC2B = looksLikeC2B(item)
+        return { row, isC2B, billRef }
+      })
+      .filter((x): x is { row: PaymentRow; isC2B: boolean; billRef: string } => x !== null)
+
+    return normalized.map((x) => x.row)
+  }, [members])
+
   const rows = useMemo(() => {
+    const sourceRows = liveDemoEnabled
+      ? liveDemoRows.length > 0
+        ? liveDemoRows
+        : normalizedPayments
+      : ALL_ROWS
     const today = new Date()
     const days = range === '7' ? 7 : range === '14' ? 14 : range === '30' ? 30 : 90
     const msPerDay = 1000 * 60 * 60 * 24
 
-    return ALL_ROWS.filter((row) => {
-      const rd = parseDate(row.date)
-      const diffDays = (today.getTime() - rd.getTime()) / msPerDay
-      return diffDays >= 0 && diffDays <= days
-    }).sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
-  }, [range])
+    return sourceRows
+      .filter((row) => {
+        const rd = parseDate(row.date)
+        const diffDays = (today.getTime() - rd.getTime()) / msPerDay
+        return diffDays >= 0 && diffDays <= days
+      })
+      .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
+  }, [liveDemoEnabled, liveDemoRows, normalizedPayments, range])
 
   const total = useMemo(
     () => formatAmount(rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)),
@@ -474,18 +700,20 @@ export default function HomePage() {
 
   const handleExport = async (type: 'csv' | 'xls' | 'doc' | 'pdf') => {
     const rangeLabel = getRangeLabel(range)
-    const csv = buildCsv(rows, rangeLabel)
-    const xlsxBlob = buildXlsxBlob(rows, rangeLabel)
+    const modeLabel = liveDemoEnabled ? 'Live Demo' : 'Normal'
+    const downloadedAt = formatDownloadedAt(new Date())
+    const csv = buildCsv(rows, rangeLabel, modeLabel, downloadedAt)
+    const xlsxBlob = buildXlsxBlob(rows, rangeLabel, modeLabel, downloadedAt)
     const timestamp = new Date().toISOString().slice(0, 10)
     if (type === 'csv') {
       download(csv, `received-payments-${timestamp}.csv`, 'text/csv;charset=utf-8;')
     } else if (type === 'xls') {
       downloadBlob(xlsxBlob, `received-payments-${timestamp}.xlsx`)
     } else if (type === 'doc') {
-      const docxBlob = await buildDocxBlob(rows, rangeLabel)
+      const docxBlob = await buildDocxBlob(rows, rangeLabel, modeLabel, downloadedAt)
       downloadBlob(docxBlob, `received-payments-${timestamp}.docx`)
     } else {
-      const doc = buildPdf(rows, rangeLabel)
+      const doc = buildPdf(rows, rangeLabel, modeLabel, downloadedAt)
       doc.save(`received-payments-${timestamp}.pdf`)
     }
   }
@@ -543,14 +771,6 @@ export default function HomePage() {
           <h1 className="sectionTitle">Received Payments</h1>
 
           <div className="controls">
-            <button className="iconButton" type="button" aria-label="Filter">
-              <img
-                className="iconButtonIcon"
-                src={new URL('../assets/icons/Filter Icon.svg', import.meta.url).toString()}
-                alt=""
-              />
-            </button>
-
             <div className="segmented" role="tablist" aria-label="Date range">
               <button
                 className={`seg ${range === '7' ? 'segActive' : ''}`}
@@ -584,6 +804,21 @@ export default function HomePage() {
               >
                 3 months
               </button>
+            </div>
+
+            <div className="modeSwitch" aria-label="Data source">
+              <span className="modeSwitchLabel">Live Demo</span>
+              <label className="switch">
+                <input
+                  className="switchInput"
+                  type="checkbox"
+                  checked={liveDemoEnabled}
+                  onChange={(e) => setLiveDemoEnabled(e.target.checked)}
+                />
+                <span className="switchTrack">
+                  <span className="switchThumb" />
+                </span>
+              </label>
             </div>
           </div>
         </section>
@@ -630,11 +865,6 @@ export default function HomePage() {
             type="button"
             onClick={() => handleExport('csv')}
           >
-            <img
-              className="exportIcon"
-              src={new URL('../assets/icons/Export.svg', import.meta.url).toString()}
-              alt=""
-            />
             <span>Export</span>
           </button>
 

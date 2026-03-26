@@ -22,7 +22,8 @@ function toErrorMessage(payload: Record<string, unknown>, fallback: string): str
 
 export const api = {
   async post<T = unknown>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
-    const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -42,7 +43,8 @@ export const api = {
   },
 
   async get<T = unknown>(path: string, token?: string): Promise<ApiResponse<T>> {
-    const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
+    const response = await fetch(url, {
       method: 'GET',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })

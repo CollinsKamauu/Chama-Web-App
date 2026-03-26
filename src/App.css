@@ -125,6 +125,7 @@
   display: flex;
   align-items: center;
   gap: 22px;
+  flex-wrap: wrap;
 }
 
 .iconButton {
@@ -164,6 +165,81 @@
 .segActive {
   background: var(--c-blue);
   color: var(--c-white);
+}
+
+.modeSwitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modeSwitchLabel {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.switch {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.switchInput {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switchTrack {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--c-white);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  transition: transform 0.15s ease;
+}
+
+.switchInput:focus-visible + .switchTrack {
+  outline: 3px solid rgba(32, 112, 210, 0.35);
+  outline-offset: 2px;
+}
+
+.switchInput:checked + .switchTrack {
+  background: var(--c-blue);
+}
+
+.switchInput:checked + .switchTrack .switchThumb {
+  transform: translateX(20px);
+}
+
+.sandboxBillRef {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--c-white);
+}
+
+.sandboxBillRef input {
+  width: 210px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 14px;
 }
 
 .card {
@@ -309,6 +385,12 @@
   .sectionHeader {
     flex-direction: row;
     align-items: center;
+  }
+
+  .controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 12px;
   }
 
   .exportRow {

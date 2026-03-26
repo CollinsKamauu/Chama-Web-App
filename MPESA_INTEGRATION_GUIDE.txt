@@ -1,0 +1,221 @@
+M-PESA DARAJA INTEGRATION GUIDE
+================================
+For: milestone-chama-backend (Render)
+Sandbox Shortcode: 600999
+Last updated: 2026-03-24
+
+
+OVERVIEW
+--------
+This guide covers the full M-Pesa Daraja integration for the Chama backend.
+There are two payment flows implemented in mpesa.ts:
+
+  1. STK Push (Lipa Na M-Pesa Online)
+     - Frontend triggers a payment prompt on the customer's phone
+     - Customer enters M-Pesa PIN to complete payment
+     - Safaricom calls our /mpesa/stkpush/callback to confirm result
+
+  2. C2B (Customer to Business) Callbacks
+     - Customer pays via paybill manually
+     - Safaricom calls /validation before completing the payment
+     - Safaricom calls /confirmation after the payment is done
+
+
+FILES PROVIDED
+--------------
+  mpesa.ts                  — Express router with all 4 M-Pesa endpoints
+  MPESA_INTEGRATION_GUIDE.txt  — This file
+
+
+ENVIRONMENT VARIABLES
+---------------------
+Add these to your .env file and to Render's environment settings:
+
+  MPESA_CONSUMER_KEY=HYijaKOotrCguHP1JVlsOd2y2qXD8i1WHMSmzjf4102Iidti
+  MPESA_CONSUMER_SECRET=jhTJqaWAydyRtZxDJRFtTXhZqR1UViVEws59hiYutL3Z7u3Ep6JCNnthdXAhmpHw
+  MPESA_SHORTCODE=600999
+  MPESA_PASSKEY=<get this from Daraja sandbox dashboard under your app>
+  MPESA_STK_CALLBACK_URL=https://milestone-chama-backend.onrender.com/mpesa/stkpush/callback
+
+NOTE: The MPESA_PASSKEY for sandbox is usually found on the Daraja portal
+under your app's details. It is a long string starting with "bfb279f9..."
+The default sandbox passkey is:
+  bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919
+
+
+SETUP INSTRUCTIONS
+------------------
+
+Step 1: Install axios (if not already installed)
+
+  npm install axios
+
+Step 2: Place the file
+
+  Copy mpesa.ts into your routes directory:
+
+    src/
+      routes/
+        mpesa.ts   <- place it here
+
+Step 3: Mount the router in your app
+
+  In your app.ts, server.ts, or index.ts, add the following:
+
+    import mpesaRouter from './routes/mpesa'
+
+    // Mount M-Pesa routes
+    app.use('/mpesa', mpesaRouter)   // covers /mpesa/stkpush and /mpesa/stkpush/callback
+    app.use('/', mpesaRouter)        // covers /validation and /confirmation at root level
+
+  This will expose:
+    POST /mpesa/stkpush                — frontend calls this to trigger STK Push
+    POST /mpesa/stkpush/callback       — Safaricom calls this after STK Push
+    POST /validation                   — Safaricom calls this before C2B payment
+    POST /confirmation                 — Safaricom calls this after C2B payment
+
+Step 4: Ensure express.json() middleware is enabled
+
+  app.use(express.json())
+
+Step 5: Implement database saving
+
+  In mpesa.ts, find the TODO comments and replace them with your actual
+  database save logic. There are 3 TODO locations:
+
+    a) /mpesa/stkpush/callback — save successful STK Push transactions
+    b) /mpesa/stkpush/callback — update failed/cancelled transaction status
+    c) /confirmation           — save C2B transactions
+
+Step 6: Deploy to Render
+
+  Push to your repository and redeploy. The following endpoints must be live:
+
+    https://milestone-chama-backend.onrender.com/mpesa/stkpush
+    https://milestone-chama-backend.onrender.com/mpesa/stkpush/callback
+    https://milestone-chama-backend.onrender.com/validation
+    https://milestone-chama-backend.onrender.com/confirmation
+
+
+FRONTEND INTEGRATION
+--------------------
+The frontend calls only ONE endpoint directly:
+
+  POST /mpesa/stkpush
+
+  Request body:
+    {
+      "phone": "2547XXXXXXXX",      // customer Safaricom number
+      "amount": 500,                 // amount in KES (minimum 1)
+      "accountRef": "ChamaContribution"
+    }
+
+  Success response:
+    {
+      "success": true,
+      "checkoutRequestId": "ws_CO_...",
+      "merchantRequestId": "...",
+      "responseDescription": "Success. Request accepted for processing"
+    }
+
+  Error response:
+    {
+      "success": false,
+      "message": "STK Push failed"
+    }
+
+  After a successful response, show the customer a message like:
+  "Check your phone and enter your M-Pesa PIN to complete the payment."
+
+  The frontend does NOT need to call /mpesa/stkpush/callback — that is
+  called directly by Safaricom's servers.
+
+
+SANDBOX CONFIGURATION (ALREADY DONE)
+-------------------------------------
+The following has already been configured on the Daraja sandbox dashboard:
+
+  Business Shortcode : 600999
+  Response Type      : Completed
+  Confirmation URL   : https://milestone-chama-backend.onrender.com/confirmation
+  Validation URL     : https://milestone-chama-backend.onrender.com/validation
+
+
+C2B PAYLOAD FIELDS (Confirmation & Validation)
+----------------------------------------------
+  TransID             — Unique M-Pesa transaction ID (e.g. LGR019G3J4)
+  TransAmount         — Amount paid (e.g. 10.00)
+  MSISDN              — Customer phone number (e.g. 254708374149)
+  BillRefNumber       — Account number entered by customer
+  TransTime           — Transaction timestamp (e.g. 20191122063845)
+  BusinessShortCode   — Paybill/till number (600999)
+  FirstName           — Customer first name
+  MiddleName          — Customer middle name
+  LastName            — Customer last name
+  TransactionType     — Type of transaction (e.g. Pay Bill)
+
+
+STK PUSH CALLBACK PAYLOAD FIELDS
+---------------------------------
+Success (ResultCode = 0):
+  Body.stkCallback.CallbackMetadata.Item contains:
+    Amount              — Amount paid
+    MpesaReceiptNumber  — Unique M-Pesa receipt (e.g. LGR019G3J4)
+    PhoneNumber         — Customer phone number
+    TransactionDate     — Timestamp
+
+Failure (ResultCode != 0):
+  Body.stkCallback.ResultCode    — Error code (e.g. 1032 = cancelled by user)
+  Body.stkCallback.ResultDesc    — Human-readable reason
+  Body.stkCallback.CheckoutRequestID — ID to match against your DB record
+
+
+VALIDATION LOGIC (Optional)
+----------------------------
+To reject a suspicious C2B transaction in /validation, respond with:
+
+  { "ResultCode": "C2B00011", "ResultDesc": "Rejected" }
+
+Example use cases for rejection:
+  - BillRefNumber does not match any known account in the database
+  - Transaction amount is outside an expected range
+  - Phone number is blacklisted
+
+
+IMPORTANT NOTES
+---------------
+  1. Safaricom expects a response from /validation within a few seconds.
+     If the server is slow, the transaction may be auto-rejected.
+
+  2. Always respond with ResultCode: 0 in /confirmation and
+     /mpesa/stkpush/callback even if your DB save fails — otherwise
+     Safaricom may retry the callback repeatedly.
+
+  3. Render free tier has cold starts (~20s). Consider upgrading to a paid
+     plan or setting up a keep-alive ping to avoid timeouts on /validation.
+
+  4. Never expose CONSUMER_KEY or CONSUMER_SECRET in frontend code.
+     All Daraja API calls must go through the backend.
+
+  5. When going live, change DARAJA_BASE_URL in mpesa.ts from:
+       https://sandbox.safaricom.co.ke
+     to:
+       https://api.safaricom.co.ke
+     and update all credentials to production values.
+
+
+TESTING WITH POSTMAN
+--------------------
+The frontend developer has a Postman collection (Safaricom APIs) configured
+with sandbox credentials. Once routes are deployed, they will run:
+
+  1. Get Access Token          — verifies sandbox auth works
+  2. C2B Register URL          — registers validation/confirmation URLs
+  3. Simulate C2B Payment      — simulates a customer C2B payment
+  4. C2B Validation Callback   — tests POST /validation directly
+  5. C2B Confirmation Callback — tests POST /confirmation directly
+
+Expected response for callbacks:
+  { "ResultCode": 0, "ResultDesc": "Accepted" }
+
+

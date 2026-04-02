@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express'
 import ky, { HTTPError } from 'ky'
-import { saveC2BTransaction, saveSTKTransaction } from './src/services/transactionService'
+import { saveC2BTransaction, saveSTKTransaction } from './server/transactionService'
 
 const router = Router()
 

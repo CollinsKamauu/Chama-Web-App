@@ -41,12 +41,14 @@ npm install --save-dev prisma
 
 ## 4. Copy the Generated Files
 
+Prisma lives under `server/` in this repo (not `src/`) so the **Netlify static build** (`tsc -b && vite build`) only type-checks browser code under `src/` and never requires `@prisma/client`. Your Node backend on Render still uses the same module unchanged.
+
 Copy these files from the frontend project root into your **backend** project:
 
 | File | Destination |
 |------|-------------|
 | `prisma/schema.prisma` | `prisma/schema.prisma` |
-| `src/services/transactionService.ts` | `src/services/transactionService.ts` |
+| `server/transactionService.ts` | `server/transactionService.ts` |
 | `mpesa.ts` | Replace your existing `mpesa.ts` |
 
 ---
@@ -68,7 +70,7 @@ In your backend `app.ts` or `routes/payments.ts`, add:
 
 ```typescript
 import { Router } from 'express'
-import { getAllTransactions } from '../services/transactionService'
+import { getAllTransactions } from '../server/transactionService'
 
 const router = Router()
 

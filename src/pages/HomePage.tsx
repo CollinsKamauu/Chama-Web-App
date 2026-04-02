@@ -2,7 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType } from 'docx'
+import {
+  Document,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TableLayoutType,
+  TextRun,
+  WidthType,
+} from 'docx'
 import * as XLSX from 'xlsx'
 import { useAuth } from '../context/AuthContext'
 import { api } from '../lib/api'
@@ -333,6 +343,20 @@ function buildXlsxBlob(rows: PaymentRow[], rangeLabel: string, modeLabel: string
   })
 }
 
+/** Twips (1/20 pt) for tblGrid — docx defaults to 100 twips/column otherwise (~2 mm), which breaks mobile viewers. */
+const DOCX_COL_WIDTHS_TWIPS = [2600, 1100, 2300, 2000, 1200] as const
+
+function docxTableCell(text: string, bold = false): TableCell {
+  return new TableCell({
+    margins: { top: 80, bottom: 80, left: 100, right: 100 },
+    children: [
+      bold
+        ? new Paragraph({ children: [new TextRun({ text, bold: true })] })
+        : new Paragraph(String(text)),
+    ],
+  })
+}
+
 async function buildDocxBlob(
   rows: PaymentRow[],
   rangeLabel: string,
@@ -343,43 +367,37 @@ async function buildDocxBlob(
   const total = formatAmount(rows.reduce((sum, row) => sum + parseAmount(row.amount), 0))
 
   const headerRow = new TableRow({
-    children: header.map(
-      (cell) =>
-        new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: cell, bold: true })] })],
-        }),
-    ),
+    tableHeader: true,
+    children: header.map((cell) => docxTableCell(cell, true)),
   })
 
   const bodyRows = rows.map(
     (row) =>
       new TableRow({
-        children: [row.id, row.date, row.name, row.phone, row.amount].map(
-          (cell) =>
-            new TableCell({
-              children: [new Paragraph(String(cell))],
-            }),
+        children: [row.id, row.date, row.name, row.phone, row.amount].map((cell) =>
+          docxTableCell(String(cell)),
         ),
       }),
   )
 
   const totalRow = new TableRow({
     children: [
-      new TableCell({ children: [new Paragraph('')] }),
-      new TableCell({ children: [new Paragraph('')] }),
-      new TableCell({ children: [new Paragraph('')] }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: 'Total', bold: true })] })],
-      }),
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: total, bold: true })] })],
-      }),
+      docxTableCell(''),
+      docxTableCell(''),
+      docxTableCell(''),
+      docxTableCell('Total', true),
+      docxTableCell(total, true),
     ],
   })
 
   const doc = new Document({
     sections: [
       {
+        properties: {
+          page: {
+            margin: { top: 1134, right: 1080, bottom: 1134, left: 1080 },
+          },
+        },
         children: [
           new Paragraph({ text: 'Milestone Fraternity' }),
           new Paragraph({ text: rangeLabel }),
@@ -387,6 +405,8 @@ async function buildDocxBlob(
           new Paragraph({ text: `Downloaded: ${downloadedAt}` }),
           new Paragraph({ text: '' }),
           new Table({
+            columnWidths: [...DOCX_COL_WIDTHS_TWIPS],
+            layout: TableLayoutType.FIXED,
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [headerRow, ...bodyRows, totalRow],
           }),

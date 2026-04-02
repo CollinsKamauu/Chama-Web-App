@@ -1,8 +1,6 @@
 import { Router, Request, Response } from 'express'
-import axios from 'axios'
-
-// Optional: import your DB service here
-// import { saveTransaction } from '../services/transactionService'
+import ky, { HTTPError } from 'ky'
+import { saveC2BTransaction, saveSTKTransaction } from './src/services/transactionService'
 
 const router = Router()
 
@@ -15,14 +13,40 @@ const STK_CALLBACK_URL = process.env.MPESA_STK_CALLBACK_URL || 'https://mileston
 
 const DARAJA_BASE_URL = 'https://sandbox.safaricom.co.ke'
 
+/** Bounded timeouts reduce DoS from hung upstream; no retries on token/STK to avoid duplicate side effects. */
+const OAUTH_TIMEOUT_MS = 30_000
+const STK_TIMEOUT_MS = 60_000
+
+async function readKyHttpErrorBody(error: unknown): Promise<{ log: unknown; clientMessage: string }> {
+  if (error instanceof HTTPError) {
+    const text = await error.response.text()
+    try {
+      const parsed = JSON.parse(text) as { errorMessage?: string; error?: string }
+      return {
+        log: parsed,
+        clientMessage: parsed.errorMessage ?? parsed.error ?? 'Request failed',
+      }
+    } catch {
+      return { log: text.slice(0, 500), clientMessage: 'Request failed' }
+    }
+  }
+  if (error instanceof Error) {
+    return { log: error.message, clientMessage: 'Request failed' }
+  }
+  return { log: String(error), clientMessage: 'Request failed' }
+}
+
 // ─── Helper: Get OAuth Access Token ───────────────────────────────────────────
 async function getAccessToken(): Promise<string> {
   const credentials = Buffer.from(`${CONSUMER_KEY}:${CONSUMER_SECRET}`).toString('base64')
-  const response = await axios.get(
-    `${DARAJA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`,
-    { headers: { Authorization: `Basic ${credentials}` } }
-  )
-  return response.data.access_token
+  const data = await ky
+    .get(`${DARAJA_BASE_URL}/oauth/v1/generate?grant_type=client_credentials`, {
+      headers: { Authorization: `Basic ${credentials}` },
+      timeout: OAUTH_TIMEOUT_MS,
+      retry: { limit: 0 },
+    })
+    .json<{ access_token: string }>()
+  return data.access_token
 }
 
 // ─── Helper: Generate STK Push Password ───────────────────────────────────────
@@ -47,9 +71,6 @@ function generatePassword(): { password: string; timestamp: string } {
  *   - phone: string   — customer phone number in format 2547XXXXXXXX
  *   - amount: number  — amount to charge (minimum 1)
  *   - accountRef: string — account reference (e.g. "ChamaContribution")
- *
- * Mount this router in app.ts/server.ts with:
- *   app.use('/mpesa', mpesaRouter)
  */
 router.post('/stkpush', async (req: Request, res: Response) => {
   const { phone, amount, accountRef } = req.body
@@ -76,25 +97,33 @@ router.post('/stkpush', async (req: Request, res: Response) => {
       TransactionDesc: `Payment for ${accountRef}`,
     }
 
-    const response = await axios.post(
-      `${DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest`,
-      payload,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    )
+    const data = await ky
+      .post(`${DARAJA_BASE_URL}/mpesa/stkpush/v1/processrequest`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        json: payload,
+        timeout: STK_TIMEOUT_MS,
+        retry: { limit: 0 },
+      })
+      .json<{
+        CheckoutRequestID?: string
+        MerchantRequestID?: string
+        ResponseDescription?: string
+      }>()
 
-    console.log('STK Push initiated:', response.data)
+    console.log('STK Push initiated:', data)
 
     return res.json({
       success: true,
-      checkoutRequestId: response.data.CheckoutRequestID,
-      merchantRequestId: response.data.MerchantRequestID,
-      responseDescription: response.data.ResponseDescription,
+      checkoutRequestId: data.CheckoutRequestID,
+      merchantRequestId: data.MerchantRequestID,
+      responseDescription: data.ResponseDescription,
     })
-  } catch (error: any) {
-    console.error('STK Push error:', error?.response?.data || error.message)
+  } catch (error: unknown) {
+    const { log, clientMessage } = await readKyHttpErrorBody(error)
+    console.error('STK Push error:', log)
     return res.status(500).json({
       success: false,
-      message: error?.response?.data?.errorMessage || 'STK Push failed',
+      message: clientMessage === 'Request failed' ? 'STK Push failed' : clientMessage,
     })
   }
 })
@@ -104,16 +133,7 @@ router.post('/stkpush', async (req: Request, res: Response) => {
  * POST /mpesa/stkpush/callback
  *
  * Safaricom calls this URL after the customer completes or cancels the
- * STK Push prompt. Use this to confirm the payment and update your DB.
- *
- * Success payload key fields:
- *   - Body.stkCallback.ResultCode: 0 means success
- *   - Body.stkCallback.CallbackMetadata.Item: array of { Name, Value } pairs
- *     containing Amount, MpesaReceiptNumber, PhoneNumber, TransactionDate
- *
- * Failure payload:
- *   - Body.stkCallback.ResultCode: non-zero (e.g. 1032 = cancelled by user)
- *   - Body.stkCallback.ResultDesc: human-readable reason
+ * STK Push prompt.
  */
 router.post('/stkpush/callback', async (req: Request, res: Response) => {
   const callback = req.body?.Body?.stkCallback
@@ -128,8 +148,7 @@ router.post('/stkpush/callback', async (req: Request, res: Response) => {
   console.log('STK Push callback received:', { ResultCode, ResultDesc, CheckoutRequestID })
 
   if (ResultCode === 0) {
-    // Payment was successful
-    const items: { Name: string; Value: any }[] = CallbackMetadata?.Item || []
+    const items: { Name: string; Value: unknown }[] = CallbackMetadata?.Item || []
     const get = (name: string) => items.find((i) => i.Name === name)?.Value
 
     const amount = get('Amount')
@@ -137,26 +156,29 @@ router.post('/stkpush/callback', async (req: Request, res: Response) => {
     const phone = get('PhoneNumber')
     const transactionDate = get('TransactionDate')
 
-    console.log('Payment confirmed:', { amount, receiptNumber, phone, transactionDate })
+    console.log('STK Push payment confirmed:', { amount, receiptNumber, phone, transactionDate })
 
-    // TODO: Save the transaction to your database here
-    // Example:
-    // await saveTransaction({
-    //   checkoutRequestId: CheckoutRequestID,
-    //   receiptNumber,
-    //   amount,
-    //   phone,
-    //   transactionDate,
-    // })
+    try {
+      const amt = typeof amount === 'number' ? amount : parseFloat(String(amount ?? ''))
+      const td = transactionDate
+      const transactionDateNorm: string | number =
+        typeof td === 'number' || typeof td === 'string' ? td : String(td ?? '')
+
+      await saveSTKTransaction({
+        checkoutRequestId: String(CheckoutRequestID ?? ''),
+        receiptNumber: String(receiptNumber ?? ''),
+        amount: Number.isFinite(amt) ? amt : 0,
+        phone: String(phone ?? ''),
+        transactionDate: transactionDateNorm,
+      })
+      console.log('STK Push transaction saved to DB:', receiptNumber)
+    } catch (dbError) {
+      console.error('Failed to save STK Push transaction to DB:', dbError)
+    }
   } else {
-    // Payment failed or was cancelled
     console.warn(`STK Push failed: [${ResultCode}] ${ResultDesc}`)
-
-    // TODO: Update transaction status in DB to 'failed' or 'cancelled'
-    // await updateTransactionStatus(CheckoutRequestID, 'failed', ResultDesc)
   }
 
-  // Always respond with 200 to acknowledge receipt
   return res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
 })
 
@@ -166,21 +188,10 @@ router.post('/stkpush/callback', async (req: Request, res: Response) => {
  *
  * Safaricom calls this URL BEFORE completing a C2B payment.
  * Respond within a few seconds or Safaricom will auto-reject.
- *
- * To ACCEPT: respond with ResultCode: 0
- * To REJECT: respond with ResultCode: "C2B00011"
- *
- * NOTE: Mount this router at app.use('/', mpesaRouter) for /validation
- * and /confirmation to be reachable at root level.
  */
 router.post('/validation', (req: Request, res: Response) => {
   const payload = req.body
   console.log('M-Pesa C2B validation callback received:', payload)
-
-  // Optional: Add validation logic here
-  // const isValid = await validateAccount(payload.BillRefNumber)
-  // if (!isValid) return res.json({ ResultCode: 'C2B00011', ResultDesc: 'Rejected' })
-
   res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
 })
 
@@ -189,29 +200,21 @@ router.post('/validation', (req: Request, res: Response) => {
  * POST /confirmation
  *
  * Safaricom calls this URL AFTER a C2B payment is completed.
- * The money has moved — record it in your database.
+ * The money has moved — this is where we persist the transaction.
  */
 router.post('/confirmation', async (req: Request, res: Response) => {
   const payload = req.body
   console.log('M-Pesa C2B confirmation callback received:', payload)
 
   try {
-    // TODO: Save the transaction to your database here
-    // await saveTransaction({
-    //   transactionId: payload.TransID,
-    //   amount: parseFloat(payload.TransAmount),
-    //   phone: payload.MSISDN,
-    //   accountRef: payload.BillRefNumber,
-    //   timestamp: payload.TransTime,
-    //   shortCode: payload.BusinessShortCode,
-    // })
-
-    res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
-  } catch (error) {
-    console.error('Error processing M-Pesa confirmation:', error)
-    // Always respond 0 to prevent Safaricom from retrying
-    res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
+    const saved = await saveC2BTransaction(payload)
+    console.log('C2B transaction saved to DB:', saved.transId)
+  } catch (dbError) {
+    console.error('Failed to save C2B transaction to DB:', dbError)
+    // Still respond 0 — never let a DB error cause Safaricom to retry endlessly
   }
+
+  res.json({ ResultCode: 0, ResultDesc: 'Accepted' })
 })
 
 export default router

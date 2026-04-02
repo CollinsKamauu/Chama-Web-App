@@ -1,0 +1,39 @@
+// Prisma schema for Milestone Chama backend
+// Database: Supabase (PostgreSQL)
+//
+// Setup steps:
+//   1. Create a free project at https://supabase.com
+//   2. Go to Project Settings → Database → Connection string (URI mode)
+//   3. Copy the connection string and add it to your Render.com environment variables:
+//      DATABASE_URL="postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres"
+//   4. Run: npx prisma migrate dev --name init
+//   5. Run: npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+
+  // Fields from Safaricom C2B confirmation callback
+  transId         String   @unique          // TransID from Safaricom e.g. "RKTQDM7W6S"
+  transAmount     Float                     // TransAmount e.g. 1000.00
+  msisdn          String                    // MSISDN — payer phone number e.g. "254712345678"
+  billRefNumber   String                    // BillRefNumber — account ref e.g. "MSL"
+  transTime       String                    // TransTime — raw Safaricom timestamp e.g. "20260325140000"
+  firstName       String   @default("")     // FirstName from Safaricom
+  lastName        String   @default("")     // LastName from Safaricom
+  businessShortCode String @default("")    // BusinessShortCode e.g. "24798"
+  transType       String   @default("C2B")  // "C2B" or "STKPush"
+
+  // Metadata
+  createdAt       DateTime @default(now())
+
+  @@map("transactions")
+}

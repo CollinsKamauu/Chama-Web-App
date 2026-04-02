@@ -46,9 +46,9 @@ The default sandbox passkey is:
 SETUP INSTRUCTIONS
 ------------------
 
-Step 1: Install axios (if not already installed)
+Step 1: Install ky (HTTP client for Daraja API calls from mpesa.ts)
 
-  npm install axios
+  npm install ky
 
 Step 2: Place the file
 

@@ -21,11 +21,18 @@ function toErrorMessage(payload: Record<string, unknown>, fallback: string): str
 }
 
 export const api = {
-  async post<T = unknown>(path: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
+  async post<T = unknown>(
+    path: string,
+    body: Record<string, unknown>,
+    token?: string,
+  ): Promise<ApiResponse<T>> {
     const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(body),
     })
     const payload = await parseJson(response)

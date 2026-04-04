@@ -485,7 +485,7 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const [range, setRange] = useState<DateRangeKey>('7')
-  const [members, setMembers] = useState<unknown[]>([])
+  const [transactions, setTransactions] = useState<unknown[]>([])
   const [liveDemoEnabled, setLiveDemoEnabled] = useState(false)
   const [liveDemoRows, setLiveDemoRows] = useState<PaymentRow[]>([])
   const liveDemoCounterRef = useRef(1)
@@ -589,29 +589,21 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem('chama_token')
-      if (!token) {
-        if (!import.meta.env.DEV) {
-          navigate('/login', { replace: true })
-        }
-        return
-      }
-
-      const data = await api.get<unknown[]>('/api/members', token)
-      if (data.success && Array.isArray(data.data)) {
-        setMembers(data.data)
-      }
+  const fetchData = async () => {
+    const token = localStorage.getItem('chama_token')
+    if (!token) {
+      if (!import.meta.env.DEV) navigate('/login', { replace: true })
+      return
     }
-
-    void fetchData()
-
-    const intervalId = window.setInterval(() => {
-      void fetchData()
-    }, 5000)
-
-    return () => window.clearInterval(intervalId)
-  }, [navigate])
+    const data = await api.get<unknown[]>('/api/transactions', token)
+    if (data.success && Array.isArray(data.data)) {
+      setTransactions(data.data)
+    }
+  }
+  void fetchData()
+  const intervalId = window.setInterval(() => { void fetchData() }, 5000)
+  return () => window.clearInterval(intervalId)
+}, [navigate])
 
   const generateLiveDemoPayment = (seq: number): PaymentRow => {
     const names = [
@@ -680,19 +672,10 @@ export default function HomePage() {
   }, [liveDemoEnabled])
 
   const normalizedPayments = useMemo(() => {
-    const normalized = members
-      .map((item, idx) => {
-        const row = normalizePaymentRow(item, idx)
-        if (!row) return null
-        const obj = item as Record<string, unknown>
-        const billRef = (typeof obj.BillRefNumber === 'string' && obj.BillRefNumber) || ''
-        const isC2B = looksLikeC2B(item)
-        return { row, isC2B, billRef }
-      })
-      .filter((x): x is { row: PaymentRow; isC2B: boolean; billRef: string } => x !== null)
-
-    return normalized.map((x) => x.row)
-  }, [members])
+  return transactions
+    .map((item, idx) => normalizePaymentRow(item, idx))
+    .filter((x): x is PaymentRow => x !== null)
+}, [transactions])
 
   const rows = useMemo(() => {
     const sourceRows = liveDemoEnabled

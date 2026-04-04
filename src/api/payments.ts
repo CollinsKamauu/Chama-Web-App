@@ -58,7 +58,7 @@ export function formatAmount(amount: number): string {
  * Response shape: { success: true, data: Transaction[] }
  */
 export async function fetchTransactions(token: string): Promise<Transaction[]> {
-  const res = await fetch(`${getApiBaseUrl()}/api/payments`, {
+  const res = await fetch(`${getApiBaseUrl()}/api/transactions`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

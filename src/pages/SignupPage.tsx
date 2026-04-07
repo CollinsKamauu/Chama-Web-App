@@ -5,9 +5,9 @@ import './AuthPages.css'
 
 const logoUrl = new URL('../assets/auth/Chama App Demo Logo 1.svg', import.meta.url).href
 const eyeUrl = new URL('../assets/auth/Eye.svg', import.meta.url).href
-const mpesaUrl = new URL('../assets/auth/Money Transfer Mpesa 1.svg', import.meta.url).href
-const fileRecordUrl = new URL('../assets/auth/File Record 1.svg', import.meta.url).href
-const exportUrl = new URL('../assets/icons/Export.svg', import.meta.url).href
+const mpesaUrl = new URL('../assets/auth/Money Transfer Web Enhanced.svg', import.meta.url).href
+const fileRecordUrl = new URL('../assets/auth/Record Icon.svg', import.meta.url).href
+const exportUrl = new URL('../assets/auth/Data Export Web Enhanced.svg', import.meta.url).href
 
 function AuthHero() {
   return (
@@ -19,7 +19,7 @@ function AuthHero() {
       </div>
       <div className="authFeature">
         <img className="authFeatureIcon" src={fileRecordUrl} alt="" />
-        <p className="authFeatureText">Record transactions</p>
+        <p className="authFeatureText">Record transactions and expenses</p>
       </div>
       <div className="authFeature">
         <img className="authFeatureIcon" src={exportUrl} alt="" />

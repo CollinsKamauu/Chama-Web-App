@@ -1,8 +1,13 @@
 const DEFAULT_BASE = 'https://milestone-chama-backend.onrender.com'
 
 export function getApiBaseUrl(): string {
-  const fromEnv = import.meta.env.VITE_API_BASE_URL
-  return (typeof fromEnv === 'string' && fromEnv.trim() !== '' ? fromEnv : DEFAULT_BASE).replace(/\/$/, '')
+  const fromBaseEnv = import.meta.env.VITE_API_BASE_URL
+  const fromLegacyEnv = import.meta.env.VITE_API_URL
+  const fromEnv =
+    (typeof fromBaseEnv === 'string' && fromBaseEnv.trim() !== '' && fromBaseEnv) ||
+    (typeof fromLegacyEnv === 'string' && fromLegacyEnv.trim() !== '' && fromLegacyEnv) ||
+    DEFAULT_BASE
+  return fromEnv.replace(/\/$/, '')
 }
 
 function parseErrorMessage(data: unknown, fallback: string): string {

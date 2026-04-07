@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -15,7 +15,7 @@ import {
 } from 'docx'
 import * as XLSX from 'xlsx'
 import { useAuth } from '../context/AuthContext'
-import { api } from '../lib/api'
+import { fetchTransactions, transactionToPaymentRow } from '../api/payments'
 import '../App.css'
 
 type PaymentRow = {
@@ -283,6 +283,19 @@ function formatAmount(n: number): string {
   return n.toLocaleString('en-KE')
 }
 
+function maskPhone(phone: string): string {
+  const digits = String(phone).replace(/\D/g, '')
+  if (digits.startsWith('254') && digits.length === 12) {
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 6)} **** ${digits.slice(10)}`
+  }
+  if (digits.length >= 9) {
+    const start = digits.slice(0, 3)
+    const end = digits.slice(-2)
+    return `${start}****${end}`
+  }
+  return phone
+}
+
 function getRangeLabel(range: DateRangeKey): string {
   if (range === '7') return 'Last 7 days'
   if (range === '14') return 'Last 14 days'
@@ -485,110 +498,15 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const [range, setRange] = useState<DateRangeKey>('7')
+<<<<<<< HEAD
   const [transactions, setTransactions] = useState<unknown[]>([])
+=======
+  const [backendPaymentRows, setBackendPaymentRows] = useState<PaymentRow[]>([])
+>>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
   const [liveDemoEnabled, setLiveDemoEnabled] = useState(false)
-  const [liveDemoRows, setLiveDemoRows] = useState<PaymentRow[]>([])
-  const liveDemoCounterRef = useRef(1)
-
-  function normalizeToDdMmYyyy(value: unknown): string | null {
-    if (typeof value === 'string') {
-      // 1) dd/mm/yyyy
-      if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) return value
-
-      // 2) ISO or RFC date strings
-      const asDate = new Date(value)
-      if (!isNaN(asDate.getTime())) {
-        const day = String(asDate.getDate()).padStart(2, '0')
-        const month = String(asDate.getMonth() + 1).padStart(2, '0')
-        const year = asDate.getFullYear()
-        return `${day}/${month}/${year}`
-      }
-    }
-
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      const asDate = new Date(value)
-      if (!isNaN(asDate.getTime())) {
-        const day = String(asDate.getDate()).padStart(2, '0')
-        const month = String(asDate.getMonth() + 1).padStart(2, '0')
-        const year = asDate.getFullYear()
-        return `${day}/${month}/${year}`
-      }
-    }
-
-    return null
-  }
-
-  function normalizeAmountToDisplay(value: unknown): string | null {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return formatAmount(value)
-    }
-
-    if (typeof value === 'string') {
-      const cleaned = value.replace(/,/g, '').trim()
-      const n = Number(cleaned)
-      if (Number.isFinite(n)) return formatAmount(n)
-      // If it already looks like a formatted amount, keep it.
-      if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(value)) return value
-    }
-
-    return null
-  }
-
-  function normalizePaymentRow(raw: unknown, idx: number): PaymentRow | null {
-    if (!raw || typeof raw !== 'object') return null
-    const obj = raw as Record<string, unknown>
-
-    const id =
-      (typeof obj.id === 'string' && obj.id) ||
-      (typeof obj.transactionId === 'string' && obj.transactionId) ||
-      (typeof obj.transId === 'string' && obj.transId) ||
-      (typeof obj.TransID === 'string' && obj.TransID) ||
-      `tx-${idx}`
-
-    const dateRaw =
-      obj.date ?? obj.transactionDate ?? obj.createdAt ?? obj.timestamp ?? obj.TransTime ?? obj.transaction_time
-    const date = normalizeToDdMmYyyy(dateRaw)
-    if (!date) return null
-
-    const name =
-      (typeof obj.name === 'string' && obj.name) ||
-      (typeof obj.customerName === 'string' && obj.customerName) ||
-      (typeof obj.fullName === 'string' && obj.fullName) ||
-      'Member'
-
-    const phone =
-      (typeof obj.phone === 'string' && obj.phone) ||
-      (typeof obj.msisdn === 'string' && obj.msisdn) ||
-      (typeof obj.MSISDN === 'string' && obj.MSISDN) ||
-      ''
-
-    const amountRaw =
-      obj.amount ??
-      obj.receivedAmount ??
-      obj.amountReceived ??
-      obj.transactionAmount ??
-      obj.TransAmount ??
-      obj.transAmount
-    const amount = normalizeAmountToDisplay(amountRaw)
-    if (!amount) return null
-
-    return { id, date, name, phone, amount }
-  }
-
-  function looksLikeC2B(raw: unknown): boolean {
-    if (!raw || typeof raw !== 'object') return false
-    const obj = raw as Record<string, unknown>
-    return (
-      'TransID' in obj ||
-      'transId' in obj ||
-      'BillRefNumber' in obj ||
-      'billRefNumber' in obj ||
-      'MSISDN' in obj ||
-      'msisdn' in obj
-    )
-  }
 
   useEffect(() => {
+<<<<<<< HEAD
   const fetchData = async () => {
     const token = localStorage.getItem('chama_token')
     if (!token) {
@@ -676,25 +594,56 @@ export default function HomePage() {
     .map((item, idx) => normalizePaymentRow(item, idx))
     .filter((x): x is PaymentRow => x !== null)
 }, [transactions])
+=======
+    const fetchData = async () => {
+      const token = localStorage.getItem('chama_token')
+      if (!token) {
+        if (!import.meta.env.DEV) {
+          navigate('/login', { replace: true })
+        }
+        return
+      }
+
+      try {
+        const txs = await fetchTransactions(token)
+        setBackendPaymentRows(txs.map(transactionToPaymentRow))
+      } catch (err) {
+        console.error('Failed to fetch M-Pesa transactions:', err)
+      }
+    }
+
+    void fetchData()
+
+    const intervalMs = liveDemoEnabled ? 3000 : 5000
+    const intervalId = window.setInterval(() => {
+      void fetchData()
+    }, intervalMs)
+
+    return () => window.clearInterval(intervalId)
+  }, [navigate, liveDemoEnabled])
+>>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
 
   const rows = useMemo(() => {
+    // Live Demo on: only M-Pesa rows from GET /api/transactions (refreshed on the interval above).
+    // Off: prefer the same backend data when present; otherwise show built-in sample rows.
     const sourceRows = liveDemoEnabled
-      ? liveDemoRows.length > 0
-        ? liveDemoRows
-        : normalizedPayments
-      : ALL_ROWS
+      ? backendPaymentRows
+      : backendPaymentRows.length > 0
+        ? backendPaymentRows
+        : ALL_ROWS
     const today = new Date()
     const days = range === '7' ? 7 : range === '14' ? 14 : range === '30' ? 30 : 90
     const msPerDay = 1000 * 60 * 60 * 24
 
     return sourceRows
+      .map((row) => ({ ...row, phone: maskPhone(row.phone) }))
       .filter((row) => {
         const rd = parseDate(row.date)
         const diffDays = (today.getTime() - rd.getTime()) / msPerDay
         return diffDays >= 0 && diffDays <= days
       })
       .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
-  }, [liveDemoEnabled, liveDemoRows, normalizedPayments, range])
+  }, [liveDemoEnabled, backendPaymentRows, range])
 
   const total = useMemo(
     () => formatAmount(rows.reduce((sum, row) => sum + parseAmount(row.amount), 0)),
@@ -703,7 +652,7 @@ export default function HomePage() {
 
   const handleExport = async (type: 'csv' | 'xls' | 'doc' | 'pdf') => {
     const rangeLabel = getRangeLabel(range)
-    const modeLabel = liveDemoEnabled ? 'Live Demo' : 'Normal'
+    const modeLabel = liveDemoEnabled ? 'Live (backend M-Pesa)' : 'Normal'
     const downloadedAt = formatDownloadedAt(new Date())
     const csv = buildCsv(rows, rangeLabel, modeLabel, downloadedAt)
     const xlsxBlob = buildXlsxBlob(rows, rangeLabel, modeLabel, downloadedAt)
@@ -812,8 +761,8 @@ export default function HomePage() {
               </button>
             </div>
 
-            <div className="modeSwitch" aria-label="Data source">
-              <span className="modeSwitchLabel">Live Demo</span>
+            <div className="modeSwitch" aria-label="Show M-Pesa transactions loaded from the server">
+              <span className="modeSwitchLabel">Live data</span>
               <label className="switch">
                 <input
                   className="switchInput"

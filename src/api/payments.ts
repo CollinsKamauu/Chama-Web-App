@@ -48,17 +48,47 @@ export function formatAmount(amount: number): string {
   return amount.toLocaleString('en-KE')
 }
 
+// ─── Table row (matches HomePage PaymentRow) ─────────────────────────────────
+
+export type PaymentTableRow = {
+  id: string
+  date: string
+  name: string
+  phone: string
+  amount: string
+}
+
+export function transactionToPaymentRow(t: Transaction): PaymentTableRow {
+  const first = (t.firstName ?? '').trim()
+  const last = (t.lastName ?? '').trim()
+  const name = [first, last].filter(Boolean).join(' ') || 'Member'
+  return {
+    id: t.transId,
+    date: formatTransTime(t.transTime),
+    name,
+    phone: formatPhone(t.msisdn),
+    amount: formatAmount(t.transAmount),
+  }
+}
+
 // ─── API Call ──────────────────────────────────────────────────────────────────
 
 /**
- * Fetches all transactions from the backend.
- * Requires a valid auth token.
+ * Fetches M-Pesa Transaction rows from Milestone-Chama-Backend.
+ * Requires a valid auth token (Bearer).
  *
- * Backend must expose: GET /api/payments
- * Response shape: { success: true, data: Transaction[] }
+ * Backend: GET /api/transactions → { success: true, data: Transaction[] }
+ * @see https://github.com/K3-is-M3/Milestone-Chama-Backend
  */
 export async function fetchTransactions(token: string): Promise<Transaction[]> {
+<<<<<<< HEAD
   const res = await fetch(`${getApiBaseUrl()}/api/transactions`, {
+=======
+  const path = '/api/transactions'
+  const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
+
+  const res = await fetch(url, {
+>>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -73,7 +103,7 @@ export async function fetchTransactions(token: string): Promise<Transaction[]> {
   const json = (await res.json()) as { success: boolean; data?: Transaction[] }
 
   if (!json.success || !Array.isArray(json.data)) {
-    throw new Error('Unexpected response shape from /api/payments')
+    throw new Error('Unexpected response shape from /api/transactions')
   }
 
   return json.data

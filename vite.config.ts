@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 const DEFAULT_BASE = 'https://milestone-chama-backend.onrender.com'
+const API_BASE = (process.env.VITE_API_BASE_URL || process.env.VITE_API_URL || DEFAULT_BASE).replace(/\/$/, '')
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,7 +11,7 @@ export default defineConfig({
     proxy: {
       // Proxy API calls through Vite to avoid browser CORS issues in dev.
       '/api': {
-        target: (process.env.VITE_API_BASE_URL || DEFAULT_BASE).replace(/\/$/, ''),
+        target: API_BASE,
         changeOrigin: true,
       },
     },

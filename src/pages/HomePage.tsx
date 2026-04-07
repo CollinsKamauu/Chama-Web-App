@@ -498,103 +498,10 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const [range, setRange] = useState<DateRangeKey>('7')
-<<<<<<< HEAD
-  const [transactions, setTransactions] = useState<unknown[]>([])
-=======
   const [backendPaymentRows, setBackendPaymentRows] = useState<PaymentRow[]>([])
->>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
   const [liveDemoEnabled, setLiveDemoEnabled] = useState(false)
 
   useEffect(() => {
-<<<<<<< HEAD
-  const fetchData = async () => {
-    const token = localStorage.getItem('chama_token')
-    if (!token) {
-      if (!import.meta.env.DEV) navigate('/login', { replace: true })
-      return
-    }
-    const data = await api.get<unknown[]>('/api/transactions', token)
-    if (data.success && Array.isArray(data.data)) {
-      setTransactions(data.data)
-    }
-  }
-  void fetchData()
-  const intervalId = window.setInterval(() => { void fetchData() }, 5000)
-  return () => window.clearInterval(intervalId)
-}, [navigate])
-
-  const generateLiveDemoPayment = (seq: number): PaymentRow => {
-    const names = [
-      'Juma Yusuf',
-      'Michael Mathu',
-      'Joy Rono',
-      'Eric Kantai',
-      'Mary Wambui',
-      'Brian Otieno',
-      'Sarah Njeri',
-      'Bashir Suleiman',
-      'Lucy Wanjiru',
-      'Peter Kariuki',
-      'Ann Chebet',
-      'George Ouma',
-      'Grace Wairimu',
-      'Samuel Kibet',
-      'Felix Mutua',
-    ]
-
-    const now = Date.now()
-    // Spread across the last 90 days so the duration filters show results.
-    const daysAgo = seq % 90
-    const date = new Date(now - daysAgo * 24 * 60 * 60 * 1000 - (seq % 12) * 60 * 60 * 1000)
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const year = date.getFullYear()
-    const ddmmyyyy = `${day}/${month}/${year}`
-
-    const txId = `demo-${now}-${seq}`
-
-    // Unique phone per sequence (keeps +2547XXXXXXXX format)
-    const base = 20000000
-    const phoneSuffix = String((base + seq) % 100000000).padStart(8, '0')
-    const phone = `+2547${phoneSuffix}`
-
-    const name = names[seq % names.length] ?? 'Member'
-
-    const amountNumber = 500 + ((seq * 137) % 24500)
-    const amount = amountNumber.toLocaleString('en-KE')
-
-    return { id: txId, date: ddmmyyyy, name, phone, amount }
-  }
-
-  useEffect(() => {
-    if (!liveDemoEnabled) {
-      setLiveDemoRows([])
-      return
-    }
-
-    // Seed with a few entries so the table isn't empty immediately.
-    const seedSeq = liveDemoCounterRef.current
-    const initial = [0, 1, 2, 3, 4].map((i) => generateLiveDemoPayment(seedSeq + i))
-    liveDemoCounterRef.current = seedSeq + initial.length
-    setLiveDemoRows(initial)
-
-    const intervalId = window.setInterval(() => {
-      const seq = liveDemoCounterRef.current
-      liveDemoCounterRef.current += 1
-      const next = generateLiveDemoPayment(seq)
-      setLiveDemoRows((prev) => [next, ...prev].slice(0, 200))
-    }, 10000)
-
-    return () => window.clearInterval(intervalId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveDemoEnabled])
-
-  const normalizedPayments = useMemo(() => {
-  return transactions
-    .map((item, idx) => normalizePaymentRow(item, idx))
-    .filter((x): x is PaymentRow => x !== null)
-}, [transactions])
-=======
     const fetchData = async () => {
       const token = localStorage.getItem('chama_token')
       if (!token) {
@@ -621,7 +528,6 @@ export default function HomePage() {
 
     return () => window.clearInterval(intervalId)
   }, [navigate, liveDemoEnabled])
->>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
 
   const rows = useMemo(() => {
     // Live Demo on: only M-Pesa rows from GET /api/transactions (refreshed on the interval above).

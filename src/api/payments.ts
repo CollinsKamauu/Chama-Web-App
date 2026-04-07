@@ -81,14 +81,10 @@ export function transactionToPaymentRow(t: Transaction): PaymentTableRow {
  * @see https://github.com/K3-is-M3/Milestone-Chama-Backend
  */
 export async function fetchTransactions(token: string): Promise<Transaction[]> {
-<<<<<<< HEAD
-  const res = await fetch(`${getApiBaseUrl()}/api/transactions`, {
-=======
   const path = '/api/transactions'
   const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
 
   const res = await fetch(url, {
->>>>>>> d83e63d (Update live transaction integration and auth-page assets.)
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,

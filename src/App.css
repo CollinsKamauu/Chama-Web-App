@@ -345,12 +345,11 @@
 
 .metricCard.contribution {
   border-bottom-color: #2eba57;
-  margin-top: -30px;
+  margin-top: 0;
 }
 
 .metricCard.expenditure {
   border-bottom-color: #fb8f2f;
-  margin-top: 30px;
 }
 
 .metricHead {
@@ -1146,7 +1145,8 @@ span.dateChipStatic {
   }
 
   .mainContent {
-    padding: 20px 16px 72px;
+    /* Leave room for fixed .mobileNav at the bottom of the viewport */
+    padding: 20px 16px calc(120px + env(safe-area-inset-bottom, 0px));
   }
 
   .pageFilterControls {
@@ -1183,6 +1183,10 @@ span.dateChipStatic {
     width: 100%;
     padding: 24px 20px;
     height: auto;
+  }
+
+  .metricCard.contribution {
+    margin-top: -30px;
   }
 
   .metricHead h3 {
@@ -1280,15 +1284,18 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    inset-block-end: 0;
-    inset-inline: 0;
-    height: 64px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100vw;
     border-top: 1px solid #e5e7eb;
     background: #ffffff;
     display: flex;
     align-items: center;
     justify-content: space-around;
     padding: 30px 12px;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
   }
 

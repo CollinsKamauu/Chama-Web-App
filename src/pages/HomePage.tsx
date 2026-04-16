@@ -686,9 +686,6 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <button type="button" className="iconChip">
-                <img src="/dashboard-icons/more-vertical.svg" alt="" />
-              </button>
             </div>
 
             <div className="balanceBody">

@@ -657,6 +657,7 @@ span.dateChipStatic {
   margin-top: 15px;
   font-size: 12px;
   color: #717680;
+  white-space: nowrap;
 }
 
 .balanceBody {
@@ -1226,7 +1227,7 @@ span.dateChipStatic {
   }
 
   .balanceAmountRow small {
-    font-size: 11px;
+    font-size: 8px;
   }
 
   .legend {
@@ -1278,7 +1279,7 @@ span.dateChipStatic {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    padding: 0 12px;
+    padding: 30px 12px;
     z-index: 30;
   }
 

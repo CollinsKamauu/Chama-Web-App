@@ -1,14 +1,10 @@
 import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Pie, PieChart, ResponsiveContainer } from 'recharts'
 import { useAuth } from '../context/AuthContext'
+import { DashboardChrome } from '../components/DashboardChrome'
+import { MetricPeriodDropdown, type MetricPeriod } from '../components/MetricPeriodDropdown'
 import '../App.css'
-
-type SidebarItem = {
-  icon: string
-  label: string
-  active?: boolean
-}
 
 type TransactionRow = {
   id: string
@@ -24,45 +20,6 @@ type BalanceSlice = {
   value: number
   color: string
 }
-
-const SIDEBAR_MAIN_ITEMS: SidebarItem[] = [
-  {
-    icon: '/dashboard-icons/Dashboard Active.svg',
-    label: 'Dashboard',
-    active: true,
-  },
-  {
-    icon: '/dashboard-icons/Contributions Inactive.svg',
-    label: 'Contributions',
-  },
-  {
-    icon: '/dashboard-icons/Members Inactive.svg',
-    label: 'Members',
-  },
-  {
-    icon: '/dashboard-icons/Finances Inactive.svg',
-    label: 'Finances',
-  },
-  {
-    icon: '/dashboard-icons/Fund Transfer Inactive.svg',
-    label: 'Transfer Funds',
-  },
-]
-
-const SIDEBAR_SUPPORT_ITEMS: SidebarItem[] = [
-  {
-    icon: '/dashboard-icons/Settings Inactive.svg',
-    label: 'Settings',
-  },
-  {
-    icon: '/dashboard-icons/Invite Code.svg',
-    label: 'Create Invite Code',
-  },
-  {
-    icon: '/dashboard-icons/Sign Out Inactive 1.svg',
-    label: 'Log out',
-  },
-]
 
 const MOCK_TX_NAMES = [
   'Grace Muthoni',
@@ -128,138 +85,6 @@ function timeOfDayGreeting(date: Date): string {
   return 'Good evening'
 }
 
-type MetricPeriod = 'today' | 'last7' | 'monthly'
-
-const METRIC_PERIOD_OPTIONS: MetricPeriod[] = ['today', 'last7', 'monthly']
-
-const METRIC_PERIOD_LABEL: Record<MetricPeriod, string> = {
-  today: 'Today',
-  last7: 'Last 7 days',
-  monthly: 'Monthly',
-}
-
-/** Primary chip text: day for Today, month name for Monthly, rolling 7-day range for Last 7 days. */
-function formatMetricPrimaryLabel(period: MetricPeriod, refDate = new Date()): string {
-  if (period === 'today') {
-    const weekday = refDate.toLocaleDateString('en-GB', { weekday: 'short' })
-    const day = refDate.getDate()
-    return `${weekday} ${day}`
-  }
-  if (period === 'monthly') {
-    return refDate.toLocaleDateString('en-GB', { month: 'long' })
-  }
-  const end = new Date(refDate)
-  const start = new Date(refDate)
-  start.setDate(start.getDate() - 6)
-  const sameMonth =
-    start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
-  if (sameMonth) {
-    const month = end.toLocaleDateString('en-GB', { month: 'long' })
-    return `${start.getDate()}-${end.getDate()} ${month}`
-  }
-  const startPart = `${start.getDate()} ${start.toLocaleDateString('en-GB', { month: 'short' })}`
-  const endPart = `${end.getDate()} ${end.toLocaleDateString('en-GB', { month: 'short' })}`
-  return `${startPart} – ${endPart}`
-}
-
-type MetricPeriodDropdownProps = {
-  period: MetricPeriod
-  onPeriodChange: (next: MetricPeriod) => void
-  menuId: string
-  /** `page` uses top-bar styling (34px, joined chips); default matches metric cards. */
-  variant?: 'metric' | 'page'
-}
-
-function MetricPeriodDropdown({
-  period,
-  onPeriodChange,
-  menuId,
-  variant = 'metric',
-}: MetricPeriodDropdownProps) {
-  const [open, setOpen] = useState(false)
-  const triggerWrapRef = useRef<HTMLDivElement>(null)
-  const primaryLabel = formatMetricPrimaryLabel(period)
-
-  useEffect(() => {
-    if (!open) return undefined
-    const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return undefined
-    const onPointerDown = (e: PointerEvent) => {
-      const el = triggerWrapRef.current
-      if (el && !el.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [open])
-
-  const select = (next: MetricPeriod) => {
-    onPeriodChange(next)
-    setOpen(false)
-  }
-
-  const chipClass = variant === 'page' ? 'topDateChip' : 'dateChip'
-  const staticClass =
-    variant === 'page' ? 'topDateChip dateChipStatic' : 'dateChip dateChipStatic'
-
-  const inner = (
-    <>
-      <span className={staticClass} aria-live="polite">
-        <img src="/dashboard-icons/calendar.svg" alt="" />
-        {primaryLabel}
-      </span>
-      <div ref={triggerWrapRef} className="metricPeriodTriggerWrap">
-        <button
-          type="button"
-          className={chipClass}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-controls={menuId}
-          id={`${menuId}-trigger`}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {METRIC_PERIOD_LABEL[period]}
-          <img src="/dashboard-icons/chevron-down.svg" alt="" />
-        </button>
-        {open ? (
-          <ul
-            className="metricPeriodMenu"
-            id={menuId}
-            role="listbox"
-            aria-labelledby={`${menuId}-trigger`}
-          >
-            {METRIC_PERIOD_OPTIONS.map((opt) => (
-              <li key={opt} role="presentation">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={period === opt}
-                  className={period === opt ? 'isActive' : undefined}
-                  onClick={() => select(opt)}
-                >
-                  {METRIC_PERIOD_LABEL[opt]}
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    </>
-  )
-
-  if (variant === 'page') {
-    return <div className="pageFilterPeriodGroup">{inner}</div>
-  }
-
-  return inner
-}
-
 /** Shown in the balance card until wired to live totals. */
 const BALANCE_CARD_AMOUNT_LABEL = 'KES 469,560'
 
@@ -319,7 +144,6 @@ export default function HomePage() {
   const [expenditurePeriod, setExpenditurePeriod] = useState<MetricPeriod>('monthly')
   const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null)
   const [balanceAmountVisible, setBalanceAmountVisible] = useState(true)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const donutWrapRef = useRef<HTMLDivElement>(null)
   const donutLabelRafRef = useRef<number | null>(null)
   const [contributionLabelPosition, setContributionLabelPosition] = useState<{ x: number; y: number } | null>(null)
@@ -387,15 +211,6 @@ export default function HomePage() {
     })
   }
 
-  useEffect(() => {
-    if (!mobileMenuOpen) return undefined
-    const onKeyDown = (e: globalThis.KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false)
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [mobileMenuOpen])
-
   useLayoutEffect(() => {
     scheduleDonutLabelUpdate()
   })
@@ -418,152 +233,8 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="dashboardPage">
-      <aside className="dashboardSidebar">
-        <div className="sidebarBrand">
-          <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="Chama App" />
-          <span>Chama App</span>
-        </div>
-
-        <div className="sidebarSection">
-          <span className="sectionLabel">GENERAL</span>
-          <nav className="menuList">
-            {SIDEBAR_MAIN_ITEMS.map((item) => (
-              <button key={item.label} type="button" className={`menuItem ${item.active ? 'active' : ''}`}>
-                <img src={item.icon} alt="" />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="sidebarSection support">
-          <span className="sectionLabel">SUPPORT</span>
-          <nav className="menuList">
-            {SIDEBAR_SUPPORT_ITEMS.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                className="menuItem"
-                onClick={item.label === 'Log out' ? handleLogout : undefined}
-              >
-                <img src={item.icon} alt="" />
-                <span>{item.label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
-      </aside>
-
-      <section className="dashboardMain">
-        <header className="mainHeader">
-          <div className="mobileHeaderBrand">
-            <Link className="mobileBrand" to="/" aria-label="Go to homepage">
-              <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="Chama App" />
-              <span>Chama App</span>
-            </Link>
-            <button
-              type="button"
-              className="mobileMenuButton"
-              aria-label="Open navigation"
-              aria-haspopup="menu"
-              aria-expanded={mobileMenuOpen}
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path d="M4 6h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <path d="M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-          <h1>Milestone Fraternity</h1>
-          <div className="searchWrap">
-            <img src="/dashboard-icons/search.svg" alt="" />
-            <input type="text" placeholder="Search" />
-          </div>
-          <div className="userInfo">
-            <img className="userAvatar" src="/dashboard-icons/Account.svg" alt="" aria-hidden="true" />
-            <div>
-              <p className="userName">{profileName}</p>
-              <p className="userRole">Treasurer</p>
-            </div>
-          </div>
-        </header>
-
-        {mobileMenuOpen ? (
-          <div className="mobileMenuOverlay" role="presentation">
-            <button
-              type="button"
-              className="mobileMenuBackdrop"
-              aria-label="Close menu"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            <div className="mobileMenuPanel" role="menu" aria-label="Mobile menu">
-              <div className="mobileMenuHeader">
-                <Link
-                  className="mobileBrand"
-                  to="/"
-                  aria-label="Go to homepage"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="Chama App" />
-                  <span>Chama App</span>
-                </Link>
-                <button
-                  type="button"
-                  className="mobileMenuClose"
-                  aria-label="Close menu"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="mobileMenuItems">
-                <button
-                  type="button"
-                  className="mobileMenuItem"
-                  role="menuitem"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <img src="/dashboard-icons/Settings Inactive.svg" alt="" aria-hidden="true" />
-                  <span>Settings</span>
-                </button>
-                <button
-                  type="button"
-                  className="mobileMenuItem"
-                  role="menuitem"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <img src="/dashboard-icons/Invite Code.svg" alt="" aria-hidden="true" />
-                  <span>Create Invite Code</span>
-                </button>
-                <button
-                  type="button"
-                  className="mobileMenuItem"
-                  role="menuitem"
-                  onClick={(e) => {
-                    setMobileMenuOpen(false)
-                    handleLogout(e)
-                  }}
-                >
-                  <img src="/dashboard-icons/Sign Out Inactive 1.svg" alt="" aria-hidden="true" />
-                  <span>Log out</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mainContent">
+    <DashboardChrome profileName={profileName} onLogout={handleLogout}>
+      <div className="mainContent">
           <div className="contentTopBar">
             <h2>
               {timeOfDayGreeting(new Date())}, {DASHBOARD_GREETING_NAME} 👋
@@ -801,26 +472,6 @@ export default function HomePage() {
             </div>
           </article>
         </div>
-      </section>
-
-      <nav className="mobileNav" aria-label="Primary navigation">
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Contributions Inactive.svg" alt="" aria-hidden="true" />
-          <span>Contributions</span>
-        </button>
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Finances Inactive.svg" alt="" aria-hidden="true" />
-          <span>Finances</span>
-        </button>
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Fund Transfer Inactive.svg" alt="" aria-hidden="true" />
-          <span>Transfer Funds</span>
-        </button>
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Members Inactive.svg" alt="" aria-hidden="true" />
-          <span>Members</span>
-        </button>
-      </nav>
-    </div>
+    </DashboardChrome>
   )
 }

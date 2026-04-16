@@ -1,5 +1,5 @@
-import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Pie, PieChart, ResponsiveContainer } from 'recharts'
 import { useAuth } from '../context/AuthContext'
 import '../App.css'
@@ -266,13 +266,6 @@ const BALANCE_CARD_AMOUNT_LABEL = 'KES 469,560'
 function maskBalanceAmountLabel(label: string): string {
   return label.replace(/[0-9,]/g, '*')
 }
-const DEG_TO_RAD = Math.PI / 180
-const CHART_CENTER = 176
-
-const polarToCartesian = (radius: number, midAngle: number) => ({
-  x: CHART_CENTER + radius * Math.cos(-midAngle * DEG_TO_RAD),
-  y: CHART_CENTER + radius * Math.sin(-midAngle * DEG_TO_RAD),
-})
 
 /** Smooth step for hover radius (Recharts Pie animation does not ease `outerRadius` changes). */
 function easeInOutCubic(t: number): number {
@@ -327,6 +320,10 @@ export default function HomePage() {
   const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null)
   const [balanceAmountVisible, setBalanceAmountVisible] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const donutWrapRef = useRef<HTMLDivElement>(null)
+  const donutLabelRafRef = useRef<number | null>(null)
+  const [contributionLabelPosition, setContributionLabelPosition] = useState<{ x: number; y: number } | null>(null)
+  const [expenditureLabelPosition, setExpenditureLabelPosition] = useState<{ x: number; y: number } | null>(null)
   const totalBalanceValue = useMemo(
     () => BALANCE_SLICES.reduce((sum, slice) => sum + slice.value, 0),
     [],
@@ -349,22 +346,45 @@ export default function HomePage() {
     activeSliceIndex === 1 ? hoverOuterRadius : baseOuterRadius,
     sliceHoverDurationMs,
   )
-  const contributionMidAngle = useMemo(
-    () => (contributionStartAngle + contributionEndAngle) / 2,
-    [contributionStartAngle, contributionEndAngle],
-  )
-  const expenditureMidAngle = useMemo(
-    () => (expenditureStartAngle + expenditureEndAngle) / 2,
-    [expenditureStartAngle, expenditureEndAngle],
-  )
-  const contributionLabelPosition = useMemo(() => polarToCartesian(140, contributionMidAngle), [contributionMidAngle])
-  const expenditureLabelPosition = useMemo(() => polarToCartesian(104, expenditureMidAngle), [expenditureMidAngle])
 
   const handleLogout = (evt?: MouseEvent<HTMLButtonElement>) => {
     evt?.preventDefault()
     localStorage.removeItem('chama_token')
     logout()
     navigate('/login', { replace: true })
+  }
+
+  const updateDonutLabelPositions = () => {
+    const wrap = donutWrapRef.current
+    if (!wrap) return
+
+    const wrapRect = wrap.getBoundingClientRect()
+    if (wrapRect.width <= 0 || wrapRect.height <= 0) return
+
+    const getLocalCenterFromSectorName = (name: string) => {
+      const sector = wrap.querySelector(`.recharts-sector[name="${name}"]`) as SVGGraphicsElement | null
+      if (!sector) return null
+      const rect = sector.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) return null
+      return {
+        x: rect.left + rect.width / 2 - wrapRect.left,
+        y: rect.top + rect.height / 2 - wrapRect.top,
+      }
+    }
+
+    const nextContribution = getLocalCenterFromSectorName(BALANCE_SLICES[0].name)
+    const nextExpenditure = getLocalCenterFromSectorName(BALANCE_SLICES[1].name)
+
+    if (nextContribution) setContributionLabelPosition(nextContribution)
+    if (nextExpenditure) setExpenditureLabelPosition(nextExpenditure)
+  }
+
+  const scheduleDonutLabelUpdate = () => {
+    if (donutLabelRafRef.current != null) cancelAnimationFrame(donutLabelRafRef.current)
+    donutLabelRafRef.current = requestAnimationFrame(() => {
+      donutLabelRafRef.current = null
+      updateDonutLabelPositions()
+    })
   }
 
   useEffect(() => {
@@ -375,6 +395,27 @@ export default function HomePage() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [mobileMenuOpen])
+
+  useLayoutEffect(() => {
+    scheduleDonutLabelUpdate()
+  })
+
+  useEffect(() => {
+    const wrap = donutWrapRef.current
+    if (!wrap) return undefined
+
+    const onResize = () => scheduleDonutLabelUpdate()
+    window.addEventListener('resize', onResize)
+
+    const ro = new ResizeObserver(() => scheduleDonutLabelUpdate())
+    ro.observe(wrap)
+
+    return () => {
+      window.removeEventListener('resize', onResize)
+      ro.disconnect()
+      if (donutLabelRafRef.current != null) cancelAnimationFrame(donutLabelRafRef.current)
+    }
+  }, [])
 
   return (
     <div className="dashboardPage">
@@ -417,10 +458,10 @@ export default function HomePage() {
       <section className="dashboardMain">
         <header className="mainHeader">
           <div className="mobileHeaderBrand">
-            <div className="mobileBrand">
+            <Link className="mobileBrand" to="/" aria-label="Go to homepage">
               <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="Chama App" />
               <span>Chama App</span>
-            </div>
+            </Link>
             <button
               type="button"
               className="mobileMenuButton"
@@ -429,7 +470,19 @@ export default function HomePage() {
               aria-expanded={mobileMenuOpen}
               onClick={() => setMobileMenuOpen(true)}
             >
-              <img src="/dashboard-icons/menu.svg" alt="" />
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path d="M4 6h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M4 12h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
             </button>
           </div>
           <h1>Milestone Fraternity</h1>
@@ -456,10 +509,15 @@ export default function HomePage() {
             />
             <div className="mobileMenuPanel" role="menu" aria-label="Mobile menu">
               <div className="mobileMenuHeader">
-                <div className="mobileBrand">
+                <Link
+                  className="mobileBrand"
+                  to="/"
+                  aria-label="Go to homepage"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="Chama App" />
                   <span>Chama App</span>
-                </div>
+                </Link>
                 <button
                   type="button"
                   className="mobileMenuClose"
@@ -478,6 +536,15 @@ export default function HomePage() {
                 >
                   <img src="/dashboard-icons/Settings Inactive.svg" alt="" aria-hidden="true" />
                   <span>Settings</span>
+                </button>
+                <button
+                  type="button"
+                  className="mobileMenuItem"
+                  role="menuitem"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <img src="/dashboard-icons/Invite Code.svg" alt="" aria-hidden="true" />
+                  <span>Create Invite Code</span>
                 </button>
                 <button
                   type="button"
@@ -602,8 +669,8 @@ export default function HomePage() {
                             : '/dashboard-icons/Show-Password-1.svg'
                         }
                         alt=""
-                        width={36}
-                        height={36}
+                        width={24}
+                        height={24}
                       />
                     </button>
                   </div>
@@ -634,7 +701,7 @@ export default function HomePage() {
                     </span>
                   ))}
                 </div>
-                <div className="donutWrap">
+                <div className="donutWrap" ref={donutWrapRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -678,8 +745,9 @@ export default function HomePage() {
                   <span
                     className="donutLabel left"
                     style={{
-                      left: `${contributionLabelPosition.x}px`,
-                      top: `${contributionLabelPosition.y}px`,
+                      left: contributionLabelPosition ? `${contributionLabelPosition.x}px` : undefined,
+                      top: contributionLabelPosition ? `${contributionLabelPosition.y}px` : undefined,
+                      opacity: contributionLabelPosition ? 1 : 0,
                     }}
                   >
                     {formatKes(BALANCE_SLICES[0].value)}
@@ -687,8 +755,9 @@ export default function HomePage() {
                   <span
                     className="donutLabel right"
                     style={{
-                      left: `${expenditureLabelPosition.x}px`,
-                      top: `${expenditureLabelPosition.y}px`,
+                      left: expenditureLabelPosition ? `${expenditureLabelPosition.x}px` : undefined,
+                      top: expenditureLabelPosition ? `${expenditureLabelPosition.y}px` : undefined,
+                      opacity: expenditureLabelPosition ? 1 : 0,
                     }}
                   >
                     {formatKes(BALANCE_SLICES[1].value)}
@@ -745,10 +814,6 @@ export default function HomePage() {
         <button type="button" className="mobileNavItem">
           <img src="/dashboard-icons/Finances Inactive.svg" alt="" aria-hidden="true" />
           <span>Finances</span>
-        </button>
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Invite Code.svg" alt="" aria-hidden="true" />
-          <span>Create Invite Code</span>
         </button>
         <button type="button" className="mobileNavItem">
           <img src="/dashboard-icons/Fund Transfer Inactive.svg" alt="" aria-hidden="true" />

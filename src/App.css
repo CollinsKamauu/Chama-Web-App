@@ -256,6 +256,7 @@
   align-items: center;
   gap: 16px;
   font-size: 14px;
+  margin-top: 30px;
   margin-left: auto;
   width: min(100%, 485px);
   justify-content: flex-end;
@@ -348,6 +349,7 @@
 
 .metricCard.expenditure {
   border-bottom-color: #fb8f2f;
+  margin-top: 30px;
 }
 
 .metricHead {
@@ -482,6 +484,8 @@ span.dateChipStatic {
   background: #f1f2f3;
   display: grid;
   place-items: center;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .metricIconWrap img {
@@ -573,6 +577,8 @@ span.dateChipStatic {
   background: #f1f2f3;
   display: grid;
   place-items: center;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .balanceIcon img {
@@ -607,8 +613,8 @@ span.dateChipStatic {
 
 .balanceVisibilityToggle img {
   display: block;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
 }
 
 .balanceVisibilityToggle:focus-visible {
@@ -1017,6 +1023,8 @@ span.dateChipStatic {
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    color: inherit;
+    text-decoration: none;
   }
 
   .mobileBrand img {
@@ -1025,8 +1033,8 @@ span.dateChipStatic {
   }
 
   .mobileBrand span {
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
   }
 
   .mobileMenuButton {
@@ -1214,7 +1222,7 @@ span.dateChipStatic {
   }
 
   .balanceAmountRow strong {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .balanceAmountRow small {

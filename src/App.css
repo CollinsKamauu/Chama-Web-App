@@ -1294,8 +1294,8 @@ span.dateChipStatic {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    padding: 30px 12px;
-    padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 12px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
     z-index: 30;
   }
 

@@ -565,7 +565,7 @@ span.dateChipStatic {
 }
 
 .balanceIcon {
-  width: 108px;
+  width: 72px;
   height: 108px;
   margin-top: 10px;
   margin-bottom: 10px;
@@ -622,7 +622,7 @@ span.dateChipStatic {
   padding-right: 5px;
 }
 
-.balanceTitleWrap span {
+.balanceTitleWrap span:not(.trend) {
   font-size: 14px;
   color: #7a7f87;
 }

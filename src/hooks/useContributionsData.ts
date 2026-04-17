@@ -176,6 +176,7 @@ export function useContributionsData() {
 
   return {
     rows,
+    rowsInPeriod,
     rowCount: rowsInPeriod.length,
     displayedRows,
     hasMoreRows,

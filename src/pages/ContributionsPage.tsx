@@ -4,22 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { DashboardChrome } from '../components/DashboardChrome'
 import { MetricPeriodDropdown, METRIC_PERIOD_OPTIONS_WITH_ALL_TIME } from '../components/MetricPeriodDropdown'
 import { useContributionsData } from '../hooks/useContributionsData'
+import { maskPhoneLastSixDigits } from '../lib/contributionsExport/maskPhone'
+import type { ContributionsExportFormat } from '../lib/contributionsExport/types'
 import '../App.css'
 
-const EXPORT_OPTIONS = ['PDF', 'Excel', 'Doc', 'CSV'] as const
-
-/** Replaces the last six digit characters with `*`; keeps `+`, spaces, and other formatting. */
-function maskPhoneLastSixDigits(phone: string): string {
-  const digitPositions: number[] = []
-  for (let i = 0; i < phone.length; i += 1) {
-    const ch = phone[i]
-    if (ch !== undefined && ch >= '0' && ch <= '9') digitPositions.push(i)
-  }
-  if (digitPositions.length === 0) return phone
-  const n = Math.min(6, digitPositions.length)
-  const toMask = new Set(digitPositions.slice(-n))
-  return [...phone].map((ch, i) => (toMask.has(i) ? '*' : ch)).join('')
-}
+const EXPORT_OPTIONS = ['PDF', 'Excel', 'Doc', 'CSV'] as const satisfies readonly ContributionsExportFormat[]
 
 export default function ContributionsPage() {
   const navigate = useNavigate()
@@ -27,6 +16,7 @@ export default function ContributionsPage() {
   const profileName = displayName || 'John Doe'
   const {
     displayedRows,
+    rowsInPeriod,
     hasMoreRows,
     showAllRows,
     rowCount,
@@ -39,6 +29,7 @@ export default function ContributionsPage() {
   } = useContributionsData()
 
   const [exportOpen, setExportOpen] = useState(false)
+  const [exportBusy, setExportBusy] = useState(false)
   const exportWrapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -65,6 +56,24 @@ export default function ContributionsPage() {
     localStorage.removeItem('chama_token')
     logout()
     navigate('/login', { replace: true })
+  }
+
+  const handleExport = async (format: ContributionsExportFormat) => {
+    setExportOpen(false)
+    setExportBusy(true)
+    try {
+      const { runContributionsExport } = await import('../lib/contributionsExport')
+      await runContributionsExport(format, {
+        rows: rowsInPeriod,
+        periodLabel: periodSubtitle,
+        exportedAt: new Date(),
+      })
+    } catch (err) {
+      console.error(err)
+      window.alert('Export failed. Please try again.')
+    } finally {
+      setExportBusy(false)
+    }
   }
 
   return (
@@ -155,9 +164,10 @@ export default function ContributionsPage() {
                 aria-expanded={exportOpen}
                 aria-controls="contributions-export-menu"
                 id="contributions-export-trigger"
+                disabled={exportBusy}
                 onClick={() => setExportOpen((o) => !o)}
               >
-                Export
+                {exportBusy ? 'Exporting…' : 'Export'}
                 <img src="/dashboard-icons/chevron-down.svg" alt="" />
               </button>
               {exportOpen ? (
@@ -169,8 +179,15 @@ export default function ContributionsPage() {
                 >
                   {EXPORT_OPTIONS.map((opt) => (
                     <li key={opt} role="presentation">
-                      <button type="button" role="option" onClick={() => setExportOpen(false)}>
-                        {opt}
+                      <button
+                        type="button"
+                        role="option"
+                        disabled={exportBusy}
+                        onClick={() => {
+                          void handleExport(opt)
+                        }}
+                      >
+                        {opt === 'Doc' ? 'Word' : opt}
                       </button>
                     </li>
                   ))}

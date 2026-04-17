@@ -1914,14 +1914,19 @@ span.dateChipStatic {
 @media (max-width: 440px) {
   .dashboardPage {
     flex-direction: column;
-    overflow-x: clip;
-    max-width: 100%;
-  }
-
-  .dashboardMain {
+    width: 100%;
     min-width: 0;
     max-width: 100%;
     overflow-x: clip;
+    box-sizing: border-box;
+  }
+
+  .dashboardMain {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    box-sizing: border-box;
   }
 
   .dashboardSidebar {
@@ -2370,17 +2375,21 @@ span.dateChipStatic {
     left: 0;
     right: 0;
     bottom: 0;
+    /* Same horizontal bounds as the page: stretch to viewport, never wider than #root. */
     width: 100%;
-    /* Avoid 100vw: it ignores the classic vertical scrollbar and is often a few px wider than the layout viewport. */
     max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border-top: 1px solid #e5e7eb;
     background: #ffffff;
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    padding: 10px 12px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    justify-content: space-between;
+    gap: 2px;
+    padding: 10px max(8px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
+      max(8px, env(safe-area-inset-left, 0px));
     z-index: 30;
+    overflow-x: clip;
   }
 
   .mobileNavItem,
@@ -2395,6 +2404,9 @@ span.dateChipStatic {
     font-size: 11px;
     color: #111827;
     cursor: pointer;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .mobileNav a.mobileNavItem {
@@ -2415,8 +2427,13 @@ span.dateChipStatic {
   }
 
   .mobileNavItem span {
-    display: inline-block;
+    display: block;
+    width: 100%;
     line-height: 14px;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    font-size: 10px;
   }
 }

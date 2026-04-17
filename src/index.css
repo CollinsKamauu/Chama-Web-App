@@ -40,8 +40,11 @@ body {
   color: var(--c-black);
 }
 
-/* Narrow layouts: document scrolls vertically only (tables use their own overflow-x). */
-@media (max-width: 440px) {
+/*
+ * Phone and small tablet: no document-level horizontal scroll.
+ * (Wide tables/charts keep overflow-x inside their own scroll regions.)
+ */
+@media (max-width: 834px) {
   html {
     overflow-x: clip;
     max-width: 100%;
@@ -50,11 +53,13 @@ body {
   body {
     overflow-x: clip;
     max-width: 100%;
+    width: 100%;
   }
 
   #root {
     min-width: 0;
     max-width: 100%;
+    width: 100%;
     overflow-x: clip;
   }
 }

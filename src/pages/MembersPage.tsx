@@ -149,6 +149,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<MemberRow[]>(() => buildAllMembers())
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [rowActionMenu, setRowActionMenu] = useState<{ id: string; top: number; left: number } | null>(null)
+  const addMemberButtonRef = useRef<HTMLButtonElement>(null)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
   const [sortDesc, setSortDesc] = useState(false)
@@ -212,11 +213,18 @@ export default function MembersPage() {
     navigate('/login', { replace: true })
   }
 
-  const handleExport = (format: (typeof EXPORT_OPTIONS)[number]) => {
+  const handleExport = async (format: (typeof EXPORT_OPTIONS)[number]) => {
     setExportOpen(false)
     setExportBusy(true)
     try {
-      window.alert(`Members export (${format}) is not wired yet. Use Contributions export for transaction data.`)
+      const { runMembersExport } = await import('../lib/membersExport')
+      await runMembersExport(format, {
+        rows: sortedMembers,
+        exportedAt: new Date(),
+      })
+    } catch (err) {
+      console.error(err)
+      window.alert('Export failed. Please try again.')
     } finally {
       setExportBusy(false)
     }
@@ -265,7 +273,12 @@ export default function MembersPage() {
 
   return (
     <DashboardChrome profileName={profileName} onLogout={handleLogout}>
-      <AddMemberModal open={addModalOpen} onClose={() => setAddModalOpen(false)} onSubmit={handleAddMemberSubmit} />
+      <AddMemberModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleAddMemberSubmit}
+        widthAnchorRef={addMemberButtonRef}
+      />
       {rowActionMenuMember && rowActionMenu ? (
         <MemberRowActionsPopover
           member={rowActionMenuMember}
@@ -289,7 +302,7 @@ export default function MembersPage() {
               </div>
             </div>
 
-            <button type="button" className="membersAddButton" onClick={() => setAddModalOpen(true)}>
+            <button ref={addMemberButtonRef} type="button" className="membersAddButton" onClick={() => setAddModalOpen(true)}>
               <img src="/dashboard-icons/Invite Code.svg" alt="" width={20} height={18} />
               Add New Member
             </button>
@@ -384,7 +397,7 @@ export default function MembersPage() {
                         type="button"
                         role="option"
                         disabled={exportBusy}
-                        onClick={() => handleExport(opt)}
+                        onClick={() => void handleExport(opt)}
                       >
                         {opt === 'Doc' ? 'Word' : opt}
                       </button>

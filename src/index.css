@@ -40,6 +40,25 @@ body {
   color: var(--c-black);
 }
 
+/* Narrow layouts: document scrolls vertically only (tables use their own overflow-x). */
+@media (max-width: 440px) {
+  html {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  #root {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+}
+
 button {
   font-family: inherit;
 }

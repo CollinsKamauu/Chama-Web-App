@@ -1,4 +1,14 @@
-import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type FormEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 import { createPortal } from 'react-dom'
 import type { MemberRole } from '../types/members'
 
@@ -13,7 +23,12 @@ type AddMemberModalProps = {
   onClose: () => void
   /** Called with validated form data. Replace with API `POST /api/members` when ready. */
   onSubmit: (payload: NewMemberPayload) => void | Promise<void>
+  /** On narrow viewports only, modal size and position align under this element (e.g. Add New Member). */
+  widthAnchorRef?: RefObject<HTMLButtonElement | null>
 }
+
+/** Same breakpoint as dashboard mobile layout (`App.css` ~440px). */
+const MOBILE_WIDTH_MQ = '(max-width: 440px)'
 
 const ROLE_OPTIONS: { label: string; value: MemberRole; pillClass: string }[] = [
   { label: 'Chairperson', value: 'Chairperson', pillClass: 'membersModalRolePill--chairperson' },
@@ -40,12 +55,18 @@ function ModalTitleIcon() {
   )
 }
 
-export function AddMemberModal({ open, onClose, onSubmit }: AddMemberModalProps) {
+export function AddMemberModal({ open, onClose, onSubmit, widthAnchorRef }: AddMemberModalProps) {
   const titleId = useId()
   const nameId = useId()
   const phoneId = useId()
   const roleGroupId = useId()
   const nameInputRef = useRef<HTMLInputElement>(null)
+  /** Viewport-fixed placement under the anchor (narrow screens only). */
+  const [anchoredLayout, setAnchoredLayout] = useState<{
+    width: number
+    top: number
+    left: number
+  } | null>(null)
 
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -72,6 +93,50 @@ export function AddMemberModal({ open, onClose, onSubmit }: AddMemberModalProps)
       document.body.style.overflow = prevOverflow
     }
   }, [open, reset])
+
+  useLayoutEffect(() => {
+    if (!open || !widthAnchorRef) {
+      setAnchoredLayout(null)
+      return undefined
+    }
+    const el = widthAnchorRef.current
+    if (!el) {
+      setAnchoredLayout(null)
+      return undefined
+    }
+    const mq = window.matchMedia(MOBILE_WIDTH_MQ)
+    const sync = () => {
+      if (!mq.matches) {
+        setAnchoredLayout(null)
+        return
+      }
+      const rect = el.getBoundingClientRect()
+      const w = Math.round(rect.width)
+      if (w <= 0) {
+        setAnchoredLayout(null)
+        return
+      }
+      const pad = 10
+      const gap = 8
+      const vw = window.innerWidth
+      let left = Math.round(rect.left)
+      left = Math.min(Math.max(pad, left), Math.max(pad, vw - w - pad))
+      const top = Math.round(rect.bottom + gap)
+      setAnchoredLayout({ width: w, top, left })
+    }
+    sync()
+    mq.addEventListener('change', sync)
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null
+    ro?.observe(el)
+    window.addEventListener('resize', sync)
+    window.addEventListener('scroll', sync, true)
+    return () => {
+      mq.removeEventListener('change', sync)
+      ro?.disconnect()
+      window.removeEventListener('resize', sync)
+      window.removeEventListener('scroll', sync, true)
+    }
+  }, [open, widthAnchorRef])
 
   useEffect(() => {
     if (!open) return undefined
@@ -123,8 +188,20 @@ export function AddMemberModal({ open, onClose, onSubmit }: AddMemberModalProps)
 
   if (!open) return null
 
+  const rootClass =
+    `membersModalRoot${anchoredLayout != null ? ' membersModalRoot--anchored' : ''}`
+
+  const rootStyle: CSSProperties | undefined =
+    anchoredLayout != null
+      ? ({
+          ['--members-modal-width']: `${anchoredLayout.width}px`,
+          ['--members-modal-top']: `${anchoredLayout.top}px`,
+          ['--members-modal-left']: `${anchoredLayout.left}px`,
+        } as CSSProperties)
+      : undefined
+
   return createPortal(
-    <div className="membersModalRoot" role="presentation">
+    <div className={rootClass} role="presentation" style={rootStyle}>
       <button type="button" className="membersModalBackdrop" aria-label="Close dialog" onClick={handleClose} />
       <div
         className="membersModalCard"

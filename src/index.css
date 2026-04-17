@@ -62,6 +62,53 @@ body {
     width: 100%;
     overflow-x: clip;
   }
+
+  /* Auth (login/signup): same horizontal bounds as the root shell */
+  .authPage {
+    overflow-x: clip;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Dashboard shell: every page using DashboardChrome shares these bounds */
+  .dashboardPage {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+
+  .dashboardMain {
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+    overflow-x: clip;
+    box-sizing: border-box;
+  }
+}
+
+/*
+ * Mobile nav (DashboardChrome): single set of size tokens used by App.css.
+ * Matches viewport width; labels ellipsis when needed.
+ */
+@media (max-width: 440px) {
+  :root {
+    --mobile-nav-pad-top: 10px;
+    --mobile-nav-pad-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    --mobile-nav-pad-right: max(8px, env(safe-area-inset-right, 0px));
+    --mobile-nav-pad-left: max(8px, env(safe-area-inset-left, 0px));
+    --mobile-nav-row-gap: 2px;
+    --mobile-nav-z: 30;
+    --mobile-nav-item-inner-gap: 4px;
+    --mobile-nav-item-font-size: 11px;
+    --mobile-nav-label-font-size: 10px;
+    --mobile-nav-label-line-height: 14px;
+    --mobile-nav-icon-w: 22px;
+    --mobile-nav-icon-h: 20px;
+  }
 }
 
 button {

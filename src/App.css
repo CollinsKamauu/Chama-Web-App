@@ -2372,8 +2372,7 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    left: 0;
-    right: 0;
+    inset-inline: 0;
     bottom: 0;
     /* Same horizontal bounds as the page: stretch to viewport, never wider than #root. */
     width: 100%;
@@ -2385,10 +2384,11 @@ span.dateChipStatic {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 2px;
-    padding: 10px max(8px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px))
-      max(8px, env(safe-area-inset-left, 0px));
-    z-index: 30;
+    gap: var(--mobile-nav-row-gap, 2px);
+    padding: var(--mobile-nav-pad-top, 10px) var(--mobile-nav-pad-right, max(8px, env(safe-area-inset-right, 0px)))
+      var(--mobile-nav-pad-bottom, calc(10px + env(safe-area-inset-bottom, 0px)))
+      var(--mobile-nav-pad-left, max(8px, env(safe-area-inset-left, 0px)));
+    z-index: var(--mobile-nav-z, 30);
     overflow-x: clip;
   }
 
@@ -2400,8 +2400,8 @@ span.dateChipStatic {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    font-size: 11px;
+    gap: var(--mobile-nav-item-inner-gap, 4px);
+    font-size: var(--mobile-nav-item-font-size, 11px);
     color: #111827;
     cursor: pointer;
     flex: 1 1 0;
@@ -2421,19 +2421,19 @@ span.dateChipStatic {
   }
 
   .mobileNavItem img {
-    width: 22px;
-    height: 20px;
+    width: var(--mobile-nav-icon-w, 22px);
+    height: var(--mobile-nav-icon-h, 20px);
     display: block;
   }
 
   .mobileNavItem span {
     display: block;
     width: 100%;
-    line-height: 14px;
+    line-height: var(--mobile-nav-label-line-height, 14px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
-    font-size: 10px;
+    font-size: var(--mobile-nav-label-font-size, 10px);
   }
 }

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ContributionsPage from './pages/ContributionsPage'
 import HomePage from './pages/HomePage'
+import MembersPage from './pages/MembersPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
@@ -31,6 +32,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ContributionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/members"
+        element={
+          <ProtectedRoute>
+            <MembersPage />
           </ProtectedRoute>
         }
       />

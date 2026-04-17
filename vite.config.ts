@@ -8,6 +8,8 @@ const API_BASE = (process.env.VITE_API_BASE_URL || process.env.VITE_API_URL || D
 export default defineConfig({
   plugins: [react()],
   server: {
+    // Listen on LAN so phones / other PCs can open http://<this-machine-ip>:5173/
+    host: true,
     proxy: {
       // Proxy API calls through Vite to avoid browser CORS issues in dev.
       '/api': {

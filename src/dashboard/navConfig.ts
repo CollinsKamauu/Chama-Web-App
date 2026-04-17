@@ -26,7 +26,8 @@ export const SIDEBAR_MAIN_NAV: SidebarMainNavItem[] = [
   },
   {
     label: 'Members',
-    iconActive: '/dashboard-icons/Members Inactive.svg',
+    to: '/members',
+    iconActive: '/dashboard-icons/Members Active.svg',
     iconInactive: '/dashboard-icons/Members Inactive.svg',
   },
   {

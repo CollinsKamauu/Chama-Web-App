@@ -1125,6 +1125,569 @@ span.dateChipStatic {
   background: transparent;
 }
 
+/* --- Members page --- */
+.membersTotalStat {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.membersReportHeader {
+  align-items: flex-start;
+}
+
+.membersAddButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 6px;
+  background: #1f73dc;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.membersAddButton:hover,
+.membersAddButton:focus-visible {
+  background: #1a65c4;
+}
+
+.membersAddButton img {
+  width: 20px;
+  height: 18px;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.membersSortThButton {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #6f7580;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+}
+
+.membersSortThButton:hover {
+  color: #1f73dc;
+}
+
+.membersSortIcon {
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.membersSortThButton:hover .membersSortIcon {
+  color: #1f73dc;
+}
+
+.contributionsTable.membersTable {
+  min-width: 680px;
+  table-layout: fixed;
+}
+
+.contributionsTable.membersTable th,
+.contributionsTable.membersTable td {
+  width: auto;
+}
+
+.contributionsTable.membersTable th:nth-child(1),
+.contributionsTable.membersTable td:nth-child(1) {
+  width: 24%;
+}
+
+.contributionsTable.membersTable th:nth-child(2),
+.contributionsTable.membersTable td:nth-child(2) {
+  width: 22%;
+}
+
+.contributionsTable.membersTable th:nth-child(3),
+.contributionsTable.membersTable td:nth-child(3) {
+  width: 20%;
+}
+
+.contributionsTable.membersTable th:nth-child(4),
+.contributionsTable.membersTable td:nth-child(4) {
+  width: 22%;
+  text-align: right;
+}
+
+.contributionsTable.membersTable th:nth-child(5),
+.contributionsTable.membersTable td:nth-child(5) {
+  width: 12%;
+  text-align: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.contributionsTable.membersTable th:nth-child(4) {
+  text-align: right;
+}
+
+.membersActionsCell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.membersRowMenuButton {
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  margin: -6px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.membersRowMenuButton:hover,
+.membersRowMenuButton:focus-visible {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.membersRowMenuButton img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.membersRolePill {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.membersRolePill--chairperson {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.membersRolePill--treasurer {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.membersRolePill--secretary {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.membersRolePill--viceChairperson {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.membersRolePill--member {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.membersRolePill--boardMember {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.membersReportFooter {
+  width: 100%;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* --- Add member modal --- */
+.membersModalRoot {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.membersModalBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.48);
+  cursor: pointer;
+}
+
+.membersModalCard {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  max-height: min(92vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+  font-family: inherit;
+}
+
+.membersModalHeader {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 48px 20px 24px;
+}
+
+.membersModalTitleChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 22px;
+  border-radius: 8px;
+  background: #1f73dc;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.membersModalTitleIcon {
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.membersModalClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 26px;
+  line-height: 1;
+  color: #1c1c1e;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+}
+
+.membersModalClose:hover,
+.membersModalClose:focus-visible {
+  background: #f3f4f6;
+}
+
+.membersModalForm {
+  padding: 8px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.membersModalField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.membersModalField > label,
+.membersModalRoleLabelRow > span:first-child {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.membersModalField input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e8eaef;
+  border-radius: 10px;
+  background: #f3f4f6;
+  padding: 14px 16px;
+  font-size: 15px;
+  color: #111827;
+  font-family: inherit;
+}
+
+.membersModalField input::placeholder {
+  color: #9ca3af;
+}
+
+.membersModalField input:focus {
+  outline: none;
+  border-color: #1f73dc;
+  background: #fff;
+}
+
+.membersModalRoleLabelRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.membersModalRoleHint {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.membersModalRolePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.membersModalRolePill {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.membersModalRolePill--chairperson {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.membersModalRolePill--treasurer {
+  background: #fef9df;
+  color: #92400e;
+}
+
+.membersModalRolePill--secretary {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.membersModalRolePill--viceChairperson {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.membersModalRolePill--boardMember {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.membersModalRolePill--member {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.membersModalRolePill.isSelected {
+  box-shadow: 0 0 0 2px #1f73dc;
+  border-color: #1f73dc;
+}
+
+.membersModalError {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #b91c1c;
+}
+
+.membersModalConfirm {
+  width: 100%;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: #1f73dc;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.membersModalConfirm:hover:not(:disabled),
+.membersModalConfirm:focus-visible:not(:disabled) {
+  background: #1a65c4;
+}
+
+.membersModalConfirm:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* --- Members row ⋮ actions menu --- */
+.membersRowMenuPopover {
+  position: fixed;
+  z-index: 3500;
+  width: 216px;
+  box-sizing: border-box;
+  padding: 12px 12px 10px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.14);
+  border: 1px solid #ebeef2;
+  font-family: inherit;
+}
+
+.membersRowMenuPopoverTitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.membersRowMenuPopoverSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.membersRowMenuEditRole {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 8px;
+  background: #eef0f3;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.membersRowMenuEditRole:hover,
+.membersRowMenuEditRole:focus-visible {
+  background: #e4e7ec;
+}
+
+.membersRowMenuEditRoleIcon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.membersRowMenuEditRoleChevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform 0.15s ease;
+}
+
+.membersRowMenuEditRoleChevron.isOpen {
+  transform: rotate(180deg);
+}
+
+.membersRowMenuRoleList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 2px 2px;
+}
+
+.membersRowMenuRolePill {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.membersRowMenuRolePill--chairperson {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.membersRowMenuRolePill--treasurer {
+  background: #fef9df;
+  color: #92400e;
+}
+
+.membersRowMenuRolePill--secretary {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.membersRowMenuRolePill--viceChairperson {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.membersRowMenuRolePill--boardMember {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.membersRowMenuRolePill--member {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.membersRowMenuRolePill.isCurrent {
+  box-shadow: 0 0 0 2px #1f73dc;
+  border-color: #1f73dc;
+}
+
+.membersRowMenuPopoverDivider {
+  height: 1px;
+  background: #e8eaef;
+  margin: 10px 0 8px;
+}
+
+.membersRowMenuDelete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fd3f3f;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.membersRowMenuDelete:hover,
+.membersRowMenuDelete:focus-visible {
+  background: #fef2f2;
+}
+
+.membersRowMenuDelete img {
+  flex-shrink: 0;
+}
+
 .pill {
   display: inline-block;
   border-radius: 4px;
@@ -1496,6 +2059,58 @@ span.dateChipStatic {
   .contributionsTable td {
     font-size: 12px;
     line-height: 1.4;
+  }
+
+  .membersReportHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .membersAddButton {
+    width: 100%;
+  }
+
+  .membersTotalStat {
+    font-size: 18px;
+  }
+
+  .contributionsTable.membersTable {
+    min-width: 560px;
+  }
+
+  .contributionsTable.membersTable th:nth-child(1),
+  .contributionsTable.membersTable td:nth-child(1) {
+    width: 26%;
+  }
+
+  .contributionsTable.membersTable th:nth-child(2),
+  .contributionsTable.membersTable td:nth-child(2) {
+    width: 24%;
+  }
+
+  .contributionsTable.membersTable th:nth-child(3),
+  .contributionsTable.membersTable td:nth-child(3) {
+    width: 18%;
+  }
+
+  .contributionsTable.membersTable th:nth-child(4),
+  .contributionsTable.membersTable td:nth-child(4) {
+    width: 20%;
+  }
+
+  .contributionsTable.membersTable th:nth-child(5),
+  .contributionsTable.membersTable td:nth-child(5) {
+    width: 12%;
+  }
+
+  .membersSortThButton {
+    font-size: 10px;
+  }
+
+  .membersRolePill {
+    font-size: 11px;
+    padding: 3px 8px;
   }
 
   .contributionsTableShowMore {

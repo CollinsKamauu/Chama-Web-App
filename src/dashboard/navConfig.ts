@@ -32,7 +32,8 @@ export const SIDEBAR_MAIN_NAV: SidebarMainNavItem[] = [
   },
   {
     label: 'Finances',
-    iconActive: '/dashboard-icons/Finances Inactive.svg',
+    to: '/finances',
+    iconActive: '/dashboard-icons/Finances Active.svg',
     iconInactive: '/dashboard-icons/Finances Inactive.svg',
   },
   {

@@ -199,10 +199,21 @@ export function DashboardChrome({ children, profileName, onLogout }: DashboardCh
           />
           <span>Contributions</span>
         </Link>
-        <button type="button" className="mobileNavItem">
-          <img src="/dashboard-icons/Finances Inactive.svg" alt="" aria-hidden="true" />
+        <Link
+          to="/finances"
+          className={`mobileNavItem${location.pathname === '/finances' ? ' mobileNavItemActive' : ''}`}
+        >
+          <img
+            src={
+              location.pathname === '/finances'
+                ? '/dashboard-icons/Finances Active.svg'
+                : '/dashboard-icons/Finances Inactive.svg'
+            }
+            alt=""
+            aria-hidden="true"
+          />
           <span>Finances</span>
-        </button>
+        </Link>
         <button type="button" className="mobileNavItem">
           <img src="/dashboard-icons/Fund Transfer Inactive.svg" alt="" aria-hidden="true" />
           <span>Transfer Funds</span>

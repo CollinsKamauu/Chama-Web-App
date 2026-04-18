@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ContributionsPage from './pages/ContributionsPage'
+import FinancesPage from './pages/FinancesPage'
 import HomePage from './pages/HomePage'
 import MembersPage from './pages/MembersPage'
 import LoginPage from './pages/LoginPage'
@@ -40,6 +41,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <MembersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/finances"
+        element={
+          <ProtectedRoute>
+            <FinancesPage />
           </ProtectedRoute>
         }
       />

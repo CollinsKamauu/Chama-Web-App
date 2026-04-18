@@ -98,8 +98,9 @@ body {
   :root {
     --mobile-nav-pad-top: 10px;
     --mobile-nav-pad-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    --mobile-nav-pad-right: max(8px, env(safe-area-inset-right, 0px));
-    --mobile-nav-pad-left: max(8px, env(safe-area-inset-left, 0px));
+    /* Match .mainContent horizontal padding (16px) on all dashboard pages */
+    --mobile-nav-pad-right: max(16px, env(safe-area-inset-right, 0px));
+    --mobile-nav-pad-left: max(16px, env(safe-area-inset-left, 0px));
     --mobile-nav-row-gap: 2px;
     --mobile-nav-z: 30;
     --mobile-nav-item-inner-gap: 4px;

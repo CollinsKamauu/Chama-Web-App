@@ -2375,11 +2375,13 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    inset-inline: 0;
+    left: 0;
+    right: 0;
     bottom: 0;
-    /* Same horizontal bounds as the page: stretch to viewport, never wider than #root. */
+    margin-inline: auto;
+    /* Cap width on mobile/tablet; centered when the viewport is wider than 440px. */
     width: 100%;
-    max-width: 100%;
+    max-width: 440px;
     min-width: 0;
     box-sizing: border-box;
     border-top: 1px solid #e5e7eb;

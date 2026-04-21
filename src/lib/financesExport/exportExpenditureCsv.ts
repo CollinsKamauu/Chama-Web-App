@@ -1,5 +1,6 @@
 import type { ExpenditureRow } from '../../types/finances'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 
 function csvEscape(value: string): string {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
@@ -12,7 +13,7 @@ export function exportExpenditureCsv(
   exportedAt: Date,
 ): void {
   const lines: string[] = []
-  lines.push(csvEscape('Milestone Fraternity'))
+  lines.push(csvEscape(getChamaOrganizationName()))
   lines.push('')
   lines.push(csvEscape('Expenditures'))
   lines.push(`${csvEscape('Date')},${csvEscape(formatExportDateLong(exportedAt))}`)

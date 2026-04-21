@@ -5,6 +5,10 @@ import ContributionsPage from './pages/ContributionsPage'
 import FinancesPage from './pages/FinancesPage'
 import HomePage from './pages/HomePage'
 import MembersPage from './pages/MembersPage'
+import ReviewTransferPage from './pages/ReviewTransferPage'
+import CreateInviteCodePage from './pages/CreateInviteCodePage'
+import SettingsPage from './pages/SettingsPage'
+import TransferFundsPage from './pages/TransferFundsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
@@ -49,6 +53,38 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <FinancesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transfer-funds"
+        element={
+          <ProtectedRoute>
+            <TransferFundsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transfer-funds/review"
+        element={
+          <ProtectedRoute>
+            <ReviewTransferPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create-invite-code"
+        element={
+          <ProtectedRoute>
+            <CreateInviteCodePage />
           </ProtectedRoute>
         }
       />

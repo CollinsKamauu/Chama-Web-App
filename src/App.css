@@ -879,7 +879,7 @@ span.dateChipStatic {
   background: #fff;
   border-radius: 7px;
   box-shadow: 0 2px 10px rgba(18, 26, 39, 0.09);
-  padding: 40px 48px 32px;
+  padding: 40px 60px 32px;
   margin-bottom: 90px;
 }
 
@@ -1094,6 +1094,15 @@ span.dateChipStatic {
 
 .contributionsExportButton:hover {
   background: #1a65c4;
+}
+
+.contributionsExportButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.contributionsExportButton:disabled:hover {
+  background: #1f73dc;
 }
 
 .contributionsExportButton img {
@@ -2023,6 +2032,9 @@ span.dateChipStatic {
   }
 
   .mobileMenuItems {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
     padding: 10px 16px 18px;
     border-top: 1px solid #eef0f3;
   }
@@ -2039,10 +2051,17 @@ span.dateChipStatic {
     text-align: left;
     font: inherit;
     color: #111827;
+    border-radius: 5px;
   }
 
   .mobileMenuItem:hover {
     background: #f6f7f9;
+    border-radius: 5px;
+  }
+
+  .mobileMenuItem.mobileMenuItemActive {
+    background: #e5e8ed;
+    border-radius: 5px;
   }
 
   .mobileMenuItem img {
@@ -2375,14 +2394,14 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    /* Center vs the visual viewport (left/right + margin auto is unreliable for fixed + % width). */
-    left: 50%;
-    right: auto;
+    /* Do not use 100vw for width: vw includes scrollbar gutter on mobile, so the bar can be
+       wider than the visible viewport and centering (e.g. translateX(-50%)) yields negative left. */
+    left: 0;
+    right: 0;
     bottom: 0;
-    transform: translateX(-50%);
-    /* Cap width; centered when the viewport is wider than 440px. */
-    width: min(100vw, 440px);
+    width: auto;
     max-width: 440px;
+    margin-inline: auto;
     min-width: 0;
     box-sizing: border-box;
     border-top: 1px solid #e5e7eb;
@@ -3051,3 +3070,1092 @@ span.dateChipStatic {
 .financesRowMenuAction--danger:focus-visible {
   background: #fee2e2;
 }
+
+/* --- Transfer Funds page --- */
+.transferFundsMain {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.transferFundsHeroCard {
+  margin-bottom: 0;
+  width: 5000px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-right: 100px;
+  padding-left: 100px;
+}
+
+.transferFundsHeroGrid {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.transferFundsHeroLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  min-width: 0;
+  flex: 1 1 280px;
+}
+
+.transferFundsHeroBalance {
+  flex: 0 1 auto;
+  text-align: left;
+  min-width: 0;
+}
+
+.transferFundsBalanceLabelRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.transferFundsBalanceLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.transferFundsBalanceToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.transferFundsBalanceToggle:hover,
+.transferFundsBalanceToggle:focus-visible {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.transferFundsBalanceAmount {
+  margin: 6px 0 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.transferFundsFormCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(18, 26, 39, 0.06);
+  overflow: hidden;
+  margin-bottom: 90px;
+  width: 5000px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-right: 100px;
+  padding-left: 100px;
+}
+
+.transferFundsFormCard > .financesStatementAccent {
+  width: calc(100% + 200px);
+  margin-left: -100px;
+  margin-right: -100px;
+}
+
+.transferFundsFormBody {
+  padding: 22px 100px 32px 100px;
+}
+
+.transferFundsModeRow {
+  width: 600px;
+  max-width: 100%;
+  margin: 0 auto 4px;
+  box-sizing: border-box;
+}
+
+.transferFundsModeButton {
+  border: 0;
+  border-radius: 8px;
+  background: #1f73dc;
+  color: #fff;
+  margin-top: 60px;
+  margin-bottom: 90px;
+  width: 100%;
+  max-width: 600px;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: default;
+  font-family: inherit;
+}
+
+.transferFundsModeButton:hover,
+.transferFundsModeButton:focus-visible {
+  background: #1a65c4;
+}
+
+.transferFundsModeButton img {
+  filter: brightness(0) invert(1);
+  display: block;
+  margin-right: 20px;
+}
+
+.transferFundsSection {
+  margin-top: 28px;
+}
+
+h2.transferFundsSectionTitle {
+  margin: 0 0 12px;
+  font-size: 24px;
+  font-weight: 500;
+  color: #111827;
+}
+
+#transfer-receiver-heading {
+  font-size: 28px;
+}
+
+#transfer-amount-heading {
+  font-size: 22px;
+  margin-top: 30px;
+}
+
+#transfer-category-heading {
+  font-size: 22px;
+  margin-top: 60px;
+}
+
+.transferFundsFormBody label[for='transfer-phone'] {
+  display: block;
+  font-size: 22px;
+  margin-top: 30px;
+}
+
+.transferFundsOptional {
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.transferFundsCategoryHint {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.transferFundsAmountGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.transferFundsAmountGrid #transfer-amount,
+.transferFundsAmountGrid .transferFundsChargesBox {
+  box-sizing: border-box;
+  min-height: 40px;
+  height: 40px;
+  padding: 0 12px;
+}
+
+.transferFundsAmountGrid #transfer-amount {
+  line-height: normal;
+  text-align: left;
+  width: 300px;
+  max-width: 100%;
+}
+
+.transferFundsAmountGrid .transferFundsChargesBox {
+  justify-content: center;
+  text-align: left;
+  width: 300px;
+  max-width: 100%;
+}
+
+.transferFundsChargesField .transferFundsChargesLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.transferFundsChargesBox {
+  box-sizing: border-box;
+  border: 1px solid #e8eaef;
+  border-radius: 8px;
+  background: #f3f4f6;
+  padding: 11px 12px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.transferFundsChargesPlaceholder {
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  font-size: 14px;
+  font-weight: 300;
+}
+
+.transferFundsChargesValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.transferFundsCatRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.transferFundsCatPill {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.transferFundsFormBody .membersModalField > label {
+  font-weight: 500;
+}
+
+#transfer-phone {
+  font-weight: 300;
+  width: 300px;
+  min-height: 40px;
+  height: 40px;
+}
+
+#transfer-amount {
+  font-weight: 400;
+}
+
+.transferFundsCatPill--benevolent {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.transferFundsCatPill--event {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.transferFundsCatPill--service {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.transferFundsCatPill--disbursement {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.transferFundsCatPill--misc {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.transferFundsCatPill--selected {
+  box-shadow: 0 0 0 2px #1f73dc;
+}
+
+.transferFundsNextWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.transferFundsNextButton {
+  font-size: 18px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  width: 300px;
+  justify-content: center;
+}
+
+.transferFundsNextButton.transferFundsNextButton--processing {
+  background: #6b7280;
+  cursor: wait;
+}
+
+.transferFundsNextButton.transferFundsNextButton--processing:hover:not(:disabled) {
+  background: #6b7280;
+}
+
+.transferFundsNextButton.transferFundsNextButton--processing:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+
+.transferFundsNextButton.transferFundsNextButton--processing:disabled:hover {
+  background: #6b7280;
+}
+
+.transferFundsNextButton.transferFundsNextButton--sent {
+  background: #22c55e;
+}
+
+.transferFundsNextButton.transferFundsNextButton--sent:hover:not(:disabled) {
+  background: #22c55e;
+}
+
+.transferFundsNextButton.transferFundsNextButton--sent:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.transferFundsNextButton.transferFundsNextButton--sent:disabled:hover {
+  background: #22c55e;
+}
+
+.transferFundsNextButton.transferFundsNextButton--failed {
+  background: #ef4444;
+}
+
+.transferFundsNextButton.transferFundsNextButton--failed:hover {
+  background: #dc2626;
+}
+
+.transferFundsReviewFormBody {
+  padding-top: 28px;
+}
+
+.transferFundsReviewBadgeWrap {
+  width: 600px;
+  max-width: 100%;
+  margin: 0 auto 4px;
+  box-sizing: border-box;
+}
+
+.transferFundsReviewBadge {
+  border: 0;
+  border-radius: 8px;
+  background: #1f73dc;
+  color: #fff;
+  margin-top: 60px;
+  margin-bottom: 90px;
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: default;
+  font-family: inherit;
+}
+
+.transferFundsReviewBadge img {
+  filter: brightness(0) invert(1);
+  display: block;
+  margin-right: 20px;
+}
+
+.transferFundsReviewSection {
+  margin-top: 20px;
+}
+
+.transferFundsReviewSection:first-of-type {
+  margin-top: 0;
+}
+
+.dashboardMain .mainContent h2.transferFundsReviewSectionTitle {
+  margin: 60px 0 30px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dashboardMain .mainContent h2.transferFundsReviewSectionTitle.transferFundsReviewSectionTitle--receiver {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 60px;
+}
+
+.transferFundsReviewFieldLabel {
+  margin: 30px 0 30px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.transferFundsReviewFieldValue {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.transferFundsReviewFieldValue--solo {
+  margin-top: 0;
+}
+
+.transferFundsReviewFieldValue--muted {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.transferFundsReviewDivider {
+  border: 0;
+  border-top: 1px dotted #d1d5db;
+  padding-top: 5px;
+  margin: 2px 0;
+}
+
+.transferFundsReviewCatPill {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  cursor: default;
+  pointer-events: none;
+}
+
+@media (max-width: 834px) {
+  .transferFundsMain {
+    gap: 16px;
+  }
+
+  .contributionsReportCard.transferFundsHeroCard {
+    padding: 22px 16px 18px;
+  }
+
+  .transferFundsHeroGrid {
+    gap: 16px;
+  }
+
+  .transferFundsHeroLeft {
+    gap: 14px;
+  }
+
+  .transferFundsHeroCard .contributionsReportIconWrap {
+    width: 64px;
+    height: 64px;
+  }
+
+  .transferFundsHeroCard .contributionsReportIconWrap img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .transferFundsHeroCard .contributionsReportTitle {
+    font-size: 22px;
+  }
+
+  .transferFundsHeroCard .contributionsReportMeta {
+    font-size: 14px;
+  }
+
+  .transferFundsHeroBalance {
+    text-align: left;
+    width: 100%;
+  }
+
+  .transferFundsBalanceLabelRow {
+    justify-content: flex-start;
+  }
+
+  .transferFundsBalanceLabel {
+    font-size: 13px;
+  }
+
+  .transferFundsBalanceToggle svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .transferFundsBalanceAmount {
+    font-size: 24px;
+  }
+
+  .transferFundsFormCard {
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-bottom: 48px;
+  }
+
+  .transferFundsFormCard > .financesStatementAccent {
+    width: calc(100% + 32px);
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+
+  .transferFundsFormBody {
+    padding: 18px 0 20px;
+  }
+
+  .transferFundsModeRow {
+    width: 100%;
+  }
+
+  .transferFundsModeButton,
+  .transferFundsReviewBadge {
+    margin-top: 28px;
+    margin-bottom: 28px;
+    font-size: 16px;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .transferFundsModeButton img,
+  .transferFundsReviewBadge img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+
+  .transferFundsSection {
+    margin-top: 20px;
+  }
+
+  h2.transferFundsSectionTitle {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+
+  #transfer-receiver-heading {
+    font-size: 20px;
+  }
+
+  #transfer-amount-heading,
+  #transfer-category-heading {
+    font-size: 18px;
+    margin-top: 24px;
+  }
+
+  .transferFundsFormBody label[for='transfer-phone'] {
+    font-size: 16px;
+    margin-top: 16px;
+  }
+
+  #transfer-phone {
+    width: 100%;
+    max-width: none;
+  }
+
+  .transferFundsFormBody #transfer-phone,
+  .transferFundsFormBody #transfer-amount {
+    font-size: 16px;
+  }
+
+  .transferFundsAmountGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .transferFundsAmountGrid #transfer-amount,
+  .transferFundsAmountGrid .transferFundsChargesBox {
+    width: 100%;
+    max-width: none;
+  }
+
+  .transferFundsCatRow {
+    gap: 8px;
+  }
+
+  .transferFundsCatPill {
+    padding: 7px 12px;
+    font-size: 14px;
+  }
+
+  .transferFundsNextWrap {
+    margin-top: 24px;
+  }
+
+  .transferFundsNextButton {
+    width: 100%;
+    max-width: 300px;
+    min-height: 48px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    font-size: 16px;
+  }
+
+  .transferFundsReviewFormBody {
+    padding-top: 16px;
+  }
+
+  .transferFundsReviewBadgeWrap {
+    width: 100%;
+  }
+
+  .dashboardMain .mainContent h2.transferFundsReviewSectionTitle {
+    margin: 28px 0 16px;
+    font-size: 18px;
+  }
+
+  .dashboardMain .mainContent h2.transferFundsReviewSectionTitle.transferFundsReviewSectionTitle--receiver {
+    font-size: 20px;
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  .transferFundsReviewFieldLabel {
+    margin: 16px 0 8px;
+    font-size: 16px;
+  }
+
+  .transferFundsReviewFieldValue {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contributionsReportCard.transferFundsHeroCard {
+    padding: 20px 12px 16px;
+  }
+
+  .transferFundsFormCard {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .transferFundsFormCard > .financesStatementAccent {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+  }
+
+  .transferFundsFormBody {
+    padding: 16px 0 16px;
+  }
+
+  .transferFundsHeroCard .contributionsReportTitle {
+    font-size: 20px;
+  }
+
+  .transferFundsBalanceAmount {
+    font-size: 22px;
+  }
+
+  .transferFundsModeButton,
+  .transferFundsReviewBadge {
+    font-size: 15px;
+    padding: 11px 12px;
+    margin-top: 24px;
+    margin-bottom: 22px;
+  }
+
+  .transferFundsCatPill {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+
+  .transferFundsNextButton {
+    max-width: none;
+    min-height: 48px;
+  }
+
+  .dashboardMain .mainContent h2.transferFundsReviewSectionTitle {
+    font-size: 17px;
+  }
+
+  .dashboardMain .mainContent h2.transferFundsReviewSectionTitle.transferFundsReviewSectionTitle--receiver {
+    font-size: 18px;
+  }
+
+  .transferFundsReviewFieldLabel {
+    font-size: 15px;
+  }
+}
+
+/* --- Settings page --- */
+.settingsPageMain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Match transfer funds hero card width on desktop (same rules as .transferFundsHeroCard). */
+.contributionsReportCard.settingsHeroCard {
+  margin-bottom: 0;
+  width: 5000px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-right: 100px;
+  padding-left: 100px;
+}
+
+.settingsHeroRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.settingsHeroIconWrap {
+  background: #e5e7eb;
+}
+
+.settingsHeroIconWrap img {
+  width: 48px;
+  height: 48px;
+  display: block;
+}
+
+/* Settings form uses .transferFundsFormCard / .transferFundsFormBody only — no extra max-width. */
+
+.settingsManageRow {
+  width: 100%;
+}
+
+.transferFundsModeButton.settingsManageAccountButton {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  width: 100%;
+  max-width: none;
+  cursor: pointer;
+}
+
+.transferFundsModeButton.settingsManageAccountButton img {
+  width: 28px;
+  height: 28px;
+  margin-right: 12px;
+  filter: brightness(0) invert(1);
+}
+
+.settingsFormSection {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.settingsFormSection + .settingsFormSection {
+  margin-top: 40px;
+}
+
+/* Must beat .mainContent h2 { font-size: 39px } — higher specificity */
+.mainContent h2.settingsFormSectionTitle {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.mainContent h2#settings-chama-heading.settingsFormSectionTitle {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.settingsFormSectionHint {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.settingsFormBody .settingsFieldBlock {
+  margin-bottom: 0;
+}
+
+.settingsFormBody label[for="settings-revoke-email"] {
+  margin-top: 30px;
+}
+
+.settingsFormBody .settingsFieldBlock input {
+  font-size: 15px;
+}
+
+/* Desktop: same field width as #transfer-phone on Transfer Funds page */
+@media (min-width: 835px) {
+  .transferFundsFormBody.settingsFormBody .settingsFieldBlock input {
+    width: 300px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.contributionsExportButton.settingsActionButton {
+  align-self: flex-start;
+  width: auto;
+  min-width: 128px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  padding: 10px 24px;
+  font-size: 15px;
+  justify-content: center;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--pending {
+  background: #6b7280;
+  cursor: wait;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--pending:hover:not(:disabled),
+.contributionsExportButton.settingsActionButton.settingsActionButton--pending:disabled {
+  background: #6b7280;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--pending:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--pending:disabled:hover {
+  background: #6b7280;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--done {
+  background: #22c55e;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--done:hover:not(:disabled),
+.contributionsExportButton.settingsActionButton.settingsActionButton--done:disabled {
+  background: #22c55e;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--done:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--done:disabled:hover {
+  background: #22c55e;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--error {
+  background: #ef4444;
+}
+
+.contributionsExportButton.settingsActionButton.settingsActionButton--error:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+@media (max-width: 834px) {
+  .settingsPageMain {
+    gap: 16px;
+  }
+
+  .contributionsReportCard.settingsHeroCard {
+    padding: 22px 16px 20px;
+    max-width: 100%;
+  }
+
+  .settingsHeroRow {
+    gap: 14px;
+  }
+
+  .settingsHeroCard .contributionsReportIconWrap {
+    width: 64px;
+    height: 64px;
+  }
+
+  .settingsHeroIconWrap img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .settingsHeroCard .contributionsReportTitle {
+    font-size: 22px;
+  }
+
+  .settingsHeroCard .contributionsReportMeta {
+    font-size: 14px;
+  }
+
+  .transferFundsFormBody.settingsFormBody .settingsFieldBlock input {
+    width: 100%;
+    max-width: none;
+  }
+
+  .transferFundsModeButton.settingsManageAccountButton {
+    margin-bottom: 30px;
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .transferFundsModeButton.settingsManageAccountButton img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+
+  .settingsFormSection + .settingsFormSection {
+    margin-top: 28px;
+  }
+
+  .mainContent h2.settingsFormSectionTitle {
+    font-size: 18px;
+  }
+
+  .settingsFormSectionHint {
+    font-size: 13px;
+  }
+
+  .settingsFormBody .settingsFieldBlock input {
+    font-size: 16px;
+  }
+
+  .contributionsExportButton.settingsActionButton {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  .inviteCodeIntro {
+    font-size: 14px;
+  }
+
+  .inviteCodeGenerateButton {
+    margin-top: 8px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    padding: 12px 14px;
+  }
+
+  .inviteCodeGenerateButton img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+  }
+
+  .inviteCodeDisplay {
+    padding: 12px 14px;
+  }
+
+  .inviteCodeDisplayValue {
+    font-size: 15px;
+  }
+}
+
+/* --- Create Invite Code page --- */
+.inviteCodePageMain {
+  align-items: stretch;
+}
+
+.inviteCodeIntro {
+  margin: 0;
+  width: 100%;
+  max-width: 720px;
+  align-self: center;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #374151;
+  text-align: left;
+}
+
+.inviteCodeFormBody .inviteCodeGenerateRow {
+  width: 100%;
+}
+
+.transferFundsModeButton.inviteCodeGenerateButton {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  cursor: pointer;
+  max-width: none;
+  width: 100%;
+}
+
+.transferFundsModeButton.inviteCodeGenerateButton:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.transferFundsModeButton.inviteCodeGenerateButton img {
+  margin-right: 12px;
+}
+
+.inviteCodeDisplay {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inviteCodeDisplayLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.inviteCodeDisplayValue {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #111827;
+  word-break: break-all;
+}
+
+.inviteCodeFormBody h2#invite-name-heading.settingsFormSectionTitle {
+  margin-top: 30px;
+  margin-bottom: 0;
+}
+
+.inviteCodeFormSection + .inviteCodeFormSection {
+  margin-top: 28px;
+}
+
+.inviteCodeConfirmRow {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.inviteCodeConfirmRow .contributionsExportButton.settingsActionButton {
+  align-self: flex-start;
+}
+
+@media (max-width: 480px) {
+  .contributionsReportCard.settingsHeroCard {
+    padding: 20px 12px 16px;
+  }
+
+  .settingsHeroCard .contributionsReportTitle {
+    font-size: 20px;
+  }
+
+  .mainContent h2.settingsFormSectionTitle {
+    font-size: 17px;
+  }
+
+  .transferFundsModeButton.settingsManageAccountButton {
+    font-size: 15px;
+    padding: 11px 12px;
+  }
+
+  .contributionsExportButton.settingsActionButton {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+  }
+}
+
+a.mobileMenuItem {
+  text-decoration: none;
+  color: inherit;
+  box-sizing: border-box;
+  border-radius: 5px;
+}
+

@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
 import { rasterizeSvgFromUrl } from '../contributionsExport/rasterizeSvg'
 
@@ -80,7 +81,7 @@ export async function exportFundBalancePdf(data: FundBalancePdfInput): Promise<v
     doc.setTextColor(17, 24, 39)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(16)
-    doc.text('Milestone Fraternity', marginLeft, TOP_BAR_MM + 8)
+    doc.text(getChamaOrganizationName(), marginLeft, TOP_BAR_MM + 8)
     doc.setFontSize(12)
     doc.text('Fund Balance', marginLeft, TOP_BAR_MM + 16)
     doc.setFont('helvetica', 'normal')

@@ -89,7 +89,7 @@ function FinancesExportControl({ variant, exportOpen, setExportOpen, wrapRef, on
 
 export default function FinancesPage() {
   const navigate = useNavigate()
-  const { displayName, logout } = useAuth()
+  const { displayName, logout, chamaOrganizationName } = useAuth()
   const profileName = displayName || 'John Doe'
 
   const {
@@ -558,7 +558,7 @@ export default function FinancesPage() {
               <div className="financesStatementAccent" aria-hidden="true" />
               <div className="financesStatementHeader">
                 <div className="financesStatementTitleRow">
-                  <h3 className="financesStatementOrg">Milestone Fraternity</h3>
+                  <h3 className="financesStatementOrg">{chamaOrganizationName}</h3>
                   <div className="financesStatementHeaderIcon" aria-hidden="true">
                     <img src="/dashboard-icons/Chama App Demo Logo.svg" alt="" width={40} height={40} />
                   </div>

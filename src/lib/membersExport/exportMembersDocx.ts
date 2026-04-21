@@ -14,6 +14,7 @@ import {
 } from 'docx'
 import type { MemberRow } from '../../types/members'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 
 const BLUE = '2070D2'
 const LABEL_GRAY = '6B7280'
@@ -34,7 +35,13 @@ export async function exportMembersDocx(rows: MemberRow[], exportedAt: Date): Pr
   const docHeaderParagraphs: Paragraph[] = [
     new Paragraph({
       children: [
-        new TextRun({ text: 'Milestone Fraternity', bold: true, size: 36, font: 'Arial', color: TITLE_GRAY }),
+        new TextRun({
+          text: getChamaOrganizationName(),
+          bold: true,
+          size: 36,
+          font: 'Arial',
+          color: TITLE_GRAY,
+        }),
       ],
     }),
     new Paragraph({

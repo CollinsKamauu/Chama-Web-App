@@ -1,4 +1,5 @@
 import type { ContributionRow } from '../../hooks/useContributionsData'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from './download'
 
 function csvEscape(value: string): string {
@@ -12,7 +13,7 @@ export function exportContributionsCsv(
   exportedAt: Date,
 ): void {
   const lines: string[] = []
-  lines.push(csvEscape('Milestone Fraternity'))
+  lines.push(csvEscape(getChamaOrganizationName()))
   lines.push('')
   lines.push(csvEscape('Contributions'))
   lines.push(`${csvEscape('Date')},${csvEscape(formatExportDateLong(exportedAt))}`)

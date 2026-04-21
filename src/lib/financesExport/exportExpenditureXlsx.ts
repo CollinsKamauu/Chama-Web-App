@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { ExpenditureRow } from '../../types/finances'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 
 const BLUE_ARGB = 'FF2070D2'
 const GRAY_ARGB = 'FF6B7280'
@@ -25,7 +26,7 @@ export async function exportExpenditureXlsx(
   ws.mergeCells(5, 1, 5, COL_COUNT)
 
   const title = ws.getCell(1, 1)
-  title.value = 'Milestone Fraternity'
+  title.value = getChamaOrganizationName()
   title.font = { bold: true, size: 14, name: 'Arial', color: { argb: TITLE_ARGB } }
   ws.getRow(1).height = 24
 

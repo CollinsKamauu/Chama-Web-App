@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import type { MemberRow } from '../../types/members'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 
 const BLUE_ARGB = 'FF2070D2'
 const GRAY_ARGB = 'FF6B7280'
@@ -17,7 +18,7 @@ export async function exportMembersXlsx(rows: MemberRow[], exportedAt: Date): Pr
   }
   ws.mergeCells(5, 1, 5, 4)
 
-  ws.getCell(1, 1).value = 'Milestone Fraternity'
+  ws.getCell(1, 1).value = getChamaOrganizationName()
   ws.getCell(1, 1).font = { bold: true, size: 14, name: 'Arial', color: { argb: TITLE_ARGB } }
   ws.getRow(1).height = 24
 

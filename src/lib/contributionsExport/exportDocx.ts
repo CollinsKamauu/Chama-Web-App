@@ -13,6 +13,7 @@ import {
   WidthType,
 } from 'docx'
 import type { ContributionRow } from '../../hooks/useContributionsData'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from './download'
 
 const BLUE = '2070D2'
@@ -44,7 +45,13 @@ export async function exportContributionsDocx(
   const docHeaderParagraphs: Paragraph[] = [
     new Paragraph({
       children: [
-        new TextRun({ text: 'Milestone Fraternity', bold: true, size: 36, font: 'Arial', color: TITLE_GRAY }),
+        new TextRun({
+          text: getChamaOrganizationName(),
+          bold: true,
+          size: 36,
+          font: 'Arial',
+          color: TITLE_GRAY,
+        }),
       ],
     }),
     new Paragraph({

@@ -1,5 +1,6 @@
 import type { MemberRow } from '../../types/members'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from '../contributionsExport/download'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 
 function csvEscape(value: string): string {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`
@@ -8,7 +9,7 @@ function csvEscape(value: string): string {
 
 export function exportMembersCsv(rows: MemberRow[], exportedAt: Date): void {
   const lines: string[] = []
-  lines.push(csvEscape('Milestone Fraternity'))
+  lines.push(csvEscape(getChamaOrganizationName()))
   lines.push('')
   lines.push(csvEscape('Chama Members'))
   lines.push(`${csvEscape('Date')},${csvEscape(formatExportDateLong(exportedAt))}`)

@@ -1,6 +1,15 @@
 import { type MouseEvent, type ReactNode, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { isMainNavItemActive, SIDEBAR_MAIN_NAV, SIDEBAR_SUPPORT_ITEMS } from '../dashboard/navConfig'
+import {
+  isMainNavItemActive,
+  isSupportNavItemActive,
+  SIDEBAR_MAIN_NAV,
+  SIDEBAR_SUPPORT_ITEMS,
+} from '../dashboard/navConfig'
+import { useAuth } from '../context/AuthContext'
+
+const SETTINGS_SIDEBAR_ITEM = SIDEBAR_SUPPORT_ITEMS.find((i) => i.label === 'Settings')
+const INVITE_SIDEBAR_ITEM = SIDEBAR_SUPPORT_ITEMS.find((i) => i.label === 'Create Invite Code')
 
 export type DashboardChromeProps = {
   children: ReactNode
@@ -9,6 +18,7 @@ export type DashboardChromeProps = {
 }
 
 export function DashboardChrome({ children, profileName, onLogout }: DashboardChromeProps) {
+  const { chamaOrganizationName } = useAuth()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -57,17 +67,32 @@ export function DashboardChrome({ children, profileName, onLogout }: DashboardCh
         <div className="sidebarSection support">
           <span className="sectionLabel">SUPPORT</span>
           <nav className="menuList">
-            {SIDEBAR_SUPPORT_ITEMS.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                className="menuItem"
-                onClick={item.label === 'Log out' ? onLogout : undefined}
-              >
-                <img src={item.icon} alt="" />
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {SIDEBAR_SUPPORT_ITEMS.map((item) => {
+              if (item.label === 'Log out') {
+                return (
+                  <button key={item.label} type="button" className="menuItem" onClick={onLogout}>
+                    <img src={item.icon} alt="" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              }
+              if (item.to) {
+                const active = isSupportNavItemActive(location.pathname, item)
+                const supportIcon = active && item.iconActive ? item.iconActive : item.icon
+                return (
+                  <Link key={item.label} to={item.to} className={`menuItem${active ? ' active' : ''}`}>
+                    <img src={supportIcon} alt="" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              }
+              return (
+                <button key={item.label} type="button" className="menuItem">
+                  <img src={item.icon} alt="" />
+                  <span>{item.label}</span>
+                </button>
+              )
+            })}
           </nav>
         </div>
       </aside>
@@ -102,7 +127,7 @@ export function DashboardChrome({ children, profileName, onLogout }: DashboardCh
               </svg>
             </button>
           </div>
-          <h1>Milestone Fraternity</h1>
+          <h1>{chamaOrganizationName}</h1>
           <div className="searchWrap">
             <img src="/dashboard-icons/search.svg" alt="" />
             <input type="text" placeholder="Search" />
@@ -145,24 +170,46 @@ export function DashboardChrome({ children, profileName, onLogout }: DashboardCh
                 </button>
               </div>
               <div className="mobileMenuItems">
-                <button
-                  type="button"
+                <Link
                   className="mobileMenuItem"
                   role="menuitem"
+                  to="/settings"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <img src="/dashboard-icons/Settings Inactive.svg" alt="" aria-hidden="true" />
+                  <img
+                    src={
+                      SETTINGS_SIDEBAR_ITEM &&
+                      SETTINGS_SIDEBAR_ITEM.to &&
+                      isSupportNavItemActive(location.pathname, SETTINGS_SIDEBAR_ITEM) &&
+                      SETTINGS_SIDEBAR_ITEM.iconActive
+                        ? SETTINGS_SIDEBAR_ITEM.iconActive
+                        : (SETTINGS_SIDEBAR_ITEM?.icon ?? '/dashboard-icons/Settings Inactive.svg')
+                    }
+                    alt=""
+                    aria-hidden="true"
+                  />
                   <span>Settings</span>
-                </button>
-                <button
-                  type="button"
-                  className="mobileMenuItem"
+                </Link>
+                <Link
+                  className={`mobileMenuItem${location.pathname === '/create-invite-code' ? ' mobileMenuItemActive' : ''}`}
                   role="menuitem"
+                  to="/create-invite-code"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <img src="/dashboard-icons/Invite Code.svg" alt="" aria-hidden="true" />
+                  <img
+                    src={
+                      INVITE_SIDEBAR_ITEM &&
+                      INVITE_SIDEBAR_ITEM.to &&
+                      isSupportNavItemActive(location.pathname, INVITE_SIDEBAR_ITEM) &&
+                      INVITE_SIDEBAR_ITEM.iconActive
+                        ? INVITE_SIDEBAR_ITEM.iconActive
+                        : (INVITE_SIDEBAR_ITEM?.icon ?? '/dashboard-icons/Invite Code.svg')
+                    }
+                    alt=""
+                    aria-hidden="true"
+                  />
                   <span>Create Invite Code</span>
-                </button>
+                </Link>
                 <button
                   type="button"
                   className="mobileMenuItem"
@@ -214,10 +261,13 @@ export function DashboardChrome({ children, profileName, onLogout }: DashboardCh
           />
           <span>Finances</span>
         </Link>
-        <button type="button" className="mobileNavItem">
+        <Link
+          to="/transfer-funds"
+          className={`mobileNavItem${location.pathname === '/transfer-funds' ? ' mobileNavItemActive' : ''}`}
+        >
           <img src="/dashboard-icons/Fund Transfer Inactive.svg" alt="" aria-hidden="true" />
           <span>Transfer Funds</span>
-        </button>
+        </Link>
         <Link
           to="/members"
           className={`mobileNavItem${location.pathname === '/members' ? ' mobileNavItemActive' : ''}`}

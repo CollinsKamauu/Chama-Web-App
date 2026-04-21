@@ -1,38 +1,18 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
+import AuthHeroFeatures from './AuthHeroFeatures'
 import './AuthPages.css'
 
-const logoUrl = new URL('../assets/auth/Chama App Demo Logo 1.svg', import.meta.url).href
+const chamaBrandLogoUrl = new URL('../assets/auth/Chama App Demo Logo.svg', import.meta.url).href
 const eyeUrl = new URL('../assets/auth/Eye.svg', import.meta.url).href
-const mpesaUrl = new URL('../assets/auth/Money Transfer Web Enhanced.svg', import.meta.url).href
-const fileRecordUrl = new URL('../assets/auth/Record Icon.svg', import.meta.url).href
-const exportUrl = new URL('../assets/auth/Data Export Web Enhanced.svg', import.meta.url).href
-
-function AuthHero() {
-  return (
-    <aside className="authHero" aria-label="Product features">
-      <h2 className="authHeroTitle">The easiest way to manage your Chama</h2>
-      <div className="authFeature">
-        <img className="authFeatureIcon" src={mpesaUrl} alt="" />
-        <p className="authFeatureText">M-Pesa Paybill and Till Automation</p>
-      </div>
-      <div className="authFeature">
-        <img className="authFeatureIcon" src={fileRecordUrl} alt="" />
-        <p className="authFeatureText">Record transactions and expenses</p>
-      </div>
-      <div className="authFeature">
-        <img className="authFeatureIcon" src={exportUrl} alt="" />
-        <p className="authFeatureText">Export and manage records</p>
-      </div>
-    </aside>
-  )
-}
 
 export default function SignupPage() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  /** Captured for future invite-code API; not sent on register yet. */
+  const [inviteCode, setInviteCode] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,10 +37,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="authPage">
+    <div className="authPage authPage--signup">
       <div className="authFormSide">
         <div className="authBrand">
-          <img className="authLogo" src={logoUrl} alt="" width={64} height={64} />
+          <img className="authLogo authLogo--signupBrand" src={chamaBrandLogoUrl} alt="" width={120} height={120} />
           <h1 className="authAppName">Chama App</h1>
           <p className="authTagline">Pamoja Twaweza</p>
         </div>
@@ -97,6 +77,21 @@ export default function SignupPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+            />
+          </div>
+
+          <div className="authField">
+            <label className="authLabel" htmlFor="signup-invite-code">
+              Invite Code
+            </label>
+            <input
+              id="signup-invite-code"
+              className="authInput"
+              type="text"
+              autoComplete="off"
+              placeholder="Enter your invite code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
             />
           </div>
 
@@ -143,7 +138,7 @@ export default function SignupPage() {
         </p>
       </div>
 
-      <AuthHero />
+      <AuthHeroFeatures />
     </div>
   )
 }

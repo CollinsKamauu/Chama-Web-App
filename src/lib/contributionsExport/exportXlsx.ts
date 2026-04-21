@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs'
 import type { ContributionRow } from '../../hooks/useContributionsData'
+import { getChamaOrganizationName } from '../chamaOrganizationName'
 import { downloadBlob, formatExportDateLong, formatExportStamp } from './download'
 
 const BLUE_ARGB = 'FF2070D2'
@@ -24,7 +25,7 @@ export async function exportContributionsXlsx(
   ws.mergeCells(5, 1, 5, 5)
 
   const title = ws.getCell(1, 1)
-  title.value = 'Milestone Fraternity'
+  title.value = getChamaOrganizationName()
   title.font = { bold: true, size: 14, name: 'Arial', color: { argb: TITLE_ARGB } }
   ws.getRow(1).height = 24
 

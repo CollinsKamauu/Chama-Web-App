@@ -8,6 +8,10 @@ import {
   type ReactNode,
 } from 'react'
 import { loginUser, registerUser } from '../api/auth'
+import {
+  getChamaOrganizationName,
+  setChamaOrganizationNameInStorage,
+} from '../lib/chamaOrganizationName'
 
 const STORAGE_TOKEN = 'chama_token'
 const STORAGE_EMAIL = 'chama_email'
@@ -44,6 +48,8 @@ type AuthContextValue = {
   token: string | null
   email: string
   displayName: string
+  chamaOrganizationName: string
+  setChamaOrganizationName: (name: string) => void
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
@@ -56,6 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(STORAGE_TOKEN))
   const [email, setEmail] = useState(() => localStorage.getItem(STORAGE_EMAIL) || '')
   const [displayName, setDisplayName] = useState(() => readStoredDisplayName())
+  const [chamaOrganizationName, setChamaOrganizationNameState] = useState(() =>
+    getChamaOrganizationName(),
+  )
 
   useEffect(() => {
     const t = localStorage.getItem(STORAGE_TOKEN)
@@ -66,6 +75,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const resolved = (fromMap && fromMap.trim()) || em.split('@')[0] || 'Member'
     localStorage.setItem(STORAGE_NAME, resolved)
     setDisplayName(resolved)
+  }, [])
+
+  const setChamaOrganizationName = useCallback((name: string) => {
+    setChamaOrganizationNameInStorage(name)
+    setChamaOrganizationNameState(getChamaOrganizationName())
   }, [])
 
   const logout = useCallback(() => {
@@ -105,12 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       email,
       displayName,
+      chamaOrganizationName,
+      setChamaOrganizationName,
       isAuthenticated: Boolean(token),
       login,
       signup,
       logout,
     }),
-    [token, email, displayName, login, signup, logout],
+    [token, email, displayName, chamaOrganizationName, setChamaOrganizationName, login, signup, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -2394,18 +2394,12 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    /*
-     * Anchor to visual center to avoid route-specific horizontal overflow shifting
-     * the bar outside the viewport on some mobile browsers.
-     */
-    left: 50%;
-    right: auto;
+    /* Full-bleed bar: same left edge as .mainHeader / .mainContent (no centered strip). */
+    left: 0;
+    right: 0;
     bottom: 0;
-    width: min(100%, 440px);
-    /* Prefer dynamic viewport width where supported (iOS browser chrome safe). */
-    width: min(100dvw, 440px);
+    width: 100%;
     max-width: 100%;
-    transform: translateX(-50%);
     min-width: 0;
     box-sizing: border-box;
     border-top: 1px solid #e5e7eb;

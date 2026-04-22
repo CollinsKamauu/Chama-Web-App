@@ -50,7 +50,7 @@ export type FundBalancePdfInput = {
   exportedAt: Date
 }
 
-export async function exportFundBalancePdf(data: FundBalancePdfInput): Promise<void> {
+export async function buildFundBalancePdfBlob(data: FundBalancePdfInput): Promise<Blob> {
   const { totalIncome, totalExpenses, netBalance, periodLabel, exportedAt } = data
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
@@ -165,6 +165,11 @@ export async function exportFundBalancePdf(data: FundBalancePdfInput): Promise<v
     maxWidth: tableWidth,
   })
 
-  const stamp = formatExportStamp(exportedAt)
-  downloadBlob(doc.output('blob'), `milestone-fraternity-fund-balance-${stamp}.pdf`)
+  return doc.output('blob')
+}
+
+export async function exportFundBalancePdf(data: FundBalancePdfInput): Promise<void> {
+  const blob = await buildFundBalancePdfBlob(data)
+  const stamp = formatExportStamp(data.exportedAt)
+  downloadBlob(blob, `milestone-fraternity-fund-balance-${stamp}.pdf`)
 }

@@ -10,11 +10,16 @@ import {
 } from '../components/MetricPeriodDropdown'
 import { useAuth } from '../context/AuthContext'
 import { useExpenditureData } from '../hooks/useExpenditureData'
+import {
+  blobDownloadNeedsFollowingUserGesture,
+  downloadBlob,
+  formatExportStamp,
+} from '../lib/contributionsExport/download'
 import { maskPhoneLastSixDigits } from '../lib/contributionsExport/maskPhone'
 import { exportExpenditureCsv } from '../lib/financesExport/exportExpenditureCsv'
 import { exportExpenditurePdf } from '../lib/financesExport/exportExpenditurePdf'
 import { exportExpenditureXlsx } from '../lib/financesExport/exportExpenditureXlsx'
-import { exportFundBalancePdf } from '../lib/financesExport/exportFundBalancePdf'
+import { buildFundBalancePdfBlob } from '../lib/financesExport/exportFundBalancePdf'
 import type { ExpenditureRow, ExpenditureType } from '../types/finances'
 import '../App.css'
 
@@ -114,6 +119,8 @@ export default function FinancesPage() {
   const [menuFor, setMenuFor] = useState<{ id: string; top: number; left: number } | null>(null)
   const [exportOpen, setExportOpen] = useState(false)
   const [fundBalancePdfBusy, setFundBalancePdfBusy] = useState(false)
+  /** iOS WebKit: PDF built async; user must tap again so downloadBlob runs on a fresh gesture. */
+  const [balancePdfReadyToSave, setBalancePdfReadyToSave] = useState<{ blob: Blob; filename: string } | null>(null)
   const exportDesktopRef = useRef<HTMLDivElement>(null)
   const exportMobileRef = useRef<HTMLDivElement>(null)
 
@@ -277,22 +284,47 @@ export default function FinancesPage() {
     [period, rows],
   )
 
-  const handleFundBalancePdf = useCallback(async () => {
-    setFundBalancePdfBusy(true)
-    try {
-      await exportFundBalancePdf({
-        totalIncome: balanceSummary.totalIncome,
-        totalExpenses: balanceSummary.totalExpenses,
-        netBalance: balanceSummary.netBalance,
-        periodLabel: METRIC_PERIOD_LABEL[period],
-        exportedAt: new Date(),
-      })
-    } catch (err) {
-      console.error('Fund balance PDF export failed.', err)
-    } finally {
-      setFundBalancePdfBusy(false)
+  useEffect(() => {
+    setBalancePdfReadyToSave(null)
+  }, [period])
+
+  const handleFundBalancePdf = useCallback(() => {
+    if (balancePdfReadyToSave) {
+      downloadBlob(balancePdfReadyToSave.blob, balancePdfReadyToSave.filename)
+      setBalancePdfReadyToSave(null)
+      return
     }
-  }, [balanceSummary.netBalance, balanceSummary.totalExpenses, balanceSummary.totalIncome, period])
+
+    setFundBalancePdfBusy(true)
+    void (async () => {
+      const exportedAt = new Date()
+      try {
+        const blob = await buildFundBalancePdfBlob({
+          totalIncome: balanceSummary.totalIncome,
+          totalExpenses: balanceSummary.totalExpenses,
+          netBalance: balanceSummary.netBalance,
+          periodLabel: METRIC_PERIOD_LABEL[period],
+          exportedAt,
+        })
+        const filename = `milestone-fraternity-fund-balance-${formatExportStamp(exportedAt)}.pdf`
+        if (blobDownloadNeedsFollowingUserGesture()) {
+          setBalancePdfReadyToSave({ blob, filename })
+        } else {
+          downloadBlob(blob, filename)
+        }
+      } catch (err) {
+        console.error('Fund balance PDF export failed.', err)
+      } finally {
+        setFundBalancePdfBusy(false)
+      }
+    })()
+  }, [
+    balancePdfReadyToSave,
+    balanceSummary.netBalance,
+    balanceSummary.totalExpenses,
+    balanceSummary.totalIncome,
+    period,
+  ])
 
   const pageNumbers = useMemo(() => {
     const out: number[] = []
@@ -619,10 +651,19 @@ export default function FinancesPage() {
                   type="button"
                   className="financesDownloadPdfBtn"
                   disabled={fundBalancePdfBusy}
-                  onClick={() => void handleFundBalancePdf()}
+                  onClick={handleFundBalancePdf}
                 >
-                  {fundBalancePdfBusy ? 'Preparing...' : 'Download PDF'}
+                  {fundBalancePdfBusy
+                    ? 'Preparing...'
+                    : balancePdfReadyToSave
+                      ? 'Save PDF'
+                      : 'Download PDF'}
                 </button>
+                {balancePdfReadyToSave ? (
+                  <p className="financesPdfReadyHint" role="status" aria-live="polite">
+                    PDF is ready — tap Save PDF to download.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

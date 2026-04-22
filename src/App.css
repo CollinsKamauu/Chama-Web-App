@@ -2398,8 +2398,8 @@ span.dateChipStatic {
     left: 0;
     right: 0;
     bottom: 0;
-    width: 100%;
-    max-width: 100%;
+    width: auto;
+    max-width: 100dvw;
     min-width: 0;
     box-sizing: border-box;
     border-top: 1px solid #e5e7eb;
@@ -2535,13 +2535,47 @@ span.dateChipStatic {
   .financesToolbar {
     flex: 0 0 auto;
     flex-direction: row;
-    flex-wrap: nowrap;
+    /* nowrap + MetricPeriodDropdown’s long date chip (width: max-content) forced page width past the viewport */
+    flex-wrap: wrap;
     align-items: center;
     align-content: center;
     justify-content: flex-start;
     gap: 10px 12px;
     width: 100%;
     min-width: 0;
+  }
+
+  /* Keep period block on one row but shrink the rolling-date chip with ellipsis */
+  .financesToolbar .pageFilterPeriodGroup {
+    display: flex;
+    align-items: center;
+    flex: 1 1 220px;
+    min-width: 0;
+    max-width: 100%;
+    gap: 6px;
+  }
+
+  .financesToolbar .pageFilterPeriodGroup > .dateChipStatic {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .financesToolbar .pageFilterPeriodGroup > .metricPeriodTriggerWrap {
+    flex-shrink: 0;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .financesToolbar .pageFilterPeriodGroup .metricPeriodTriggerWrap > .topDateChip {
+    min-width: 0;
+    max-width: min(100%, 200px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* Search removed on small screens (filtering will use API later) */

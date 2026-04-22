@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.24",
     "docx": "^9.6.1",
     "exceljs": "^4.4.0",
     "jspdf": "^4.2.1",

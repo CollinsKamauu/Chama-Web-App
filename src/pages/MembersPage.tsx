@@ -1,3 +1,4 @@
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -101,6 +102,8 @@ function buildAllMembers(): MemberRow[] {
 
 const EXPORT_OPTIONS = ['PDF', 'Excel', 'Doc', 'CSV'] as const
 
+const MEMBERS_TABLE_COL_COUNT = 5
+
 /** Higher = more senior. Used for role-column sort. */
 const ROLE_SENIORITY: Record<MemberRole, number> = {
   Chairperson: 60,
@@ -169,6 +172,22 @@ export default function MembersPage() {
     })
     return list
   }, [members, sortColumn, sortDesc])
+
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: sortedMembers.length,
+    getScrollElement: () => tableScrollRef.current,
+    estimateSize: () => 52,
+    overscan: 14,
+  })
+
+  const virtualRows = rowVirtualizer.getVirtualItems()
+  const padTop = virtualRows.length > 0 ? virtualRows[0].start : 0
+  const padBottom =
+    virtualRows.length > 0
+      ? rowVirtualizer.getTotalSize() - virtualRows[virtualRows.length - 1].end
+      : 0
 
   const handleAddMemberSubmit = (payload: NewMemberPayload) => {
     // TODO: POST /api/members — send { fullName, phone, role } as JSON; replace local update with server response.
@@ -308,7 +327,12 @@ export default function MembersPage() {
             </button>
           </header>
 
-          <div className="contributionsTableScroll membersTableScroll" role="region" aria-label="Chama members">
+          <div
+            ref={tableScrollRef}
+            className="contributionsTableScroll membersTableScroll"
+            role="region"
+            aria-label="Chama members"
+          >
             <table className="contributionsTable membersTable">
               <caption className="visuallyHidden">
                 Members: name, phone number, role, contributions in KES, and row actions. Sort by name or role from
@@ -342,29 +366,50 @@ export default function MembersPage() {
                 </tr>
               </thead>
               <tbody>
-                {sortedMembers.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.name}</td>
-                    <td>{maskPhoneLastSixDigits(row.phone)}</td>
-                    <td>
-                      <span className={`membersRolePill membersRolePill--${roleToSlug(row.role)}`}>{row.role}</span>
-                    </td>
-                    <td className="contributionsAmountCell">{row.contributions.toLocaleString('en-US')}</td>
-                    <td className="membersActionsCell">
-                      <button
-                        type="button"
-                        className="membersRowMenuButton"
-                        aria-label={`Actions for ${row.name}`}
-                        aria-haspopup="menu"
-                        aria-expanded={rowActionMenu?.id === row.id}
-                        data-members-actions-trigger={row.id}
-                        onClick={(e) => openRowActionMenu(e, row.id)}
-                      >
-                        <img src="/dashboard-icons/more-vertical.svg" alt="" width={20} height={20} />
-                      </button>
-                    </td>
+                {padTop > 0 ? (
+                  <tr className="membersTableVirtualPadRow" aria-hidden="true">
+                    <td
+                      className="membersTableVirtualSpacer"
+                      colSpan={MEMBERS_TABLE_COL_COUNT}
+                      style={{ height: padTop }}
+                    />
                   </tr>
-                ))}
+                ) : null}
+                {virtualRows.map((vr) => {
+                  const row = sortedMembers[vr.index]!
+                  return (
+                    <tr key={row.id} data-index={vr.index} ref={rowVirtualizer.measureElement}>
+                      <td>{row.name}</td>
+                      <td>{maskPhoneLastSixDigits(row.phone)}</td>
+                      <td>
+                        <span className={`membersRolePill membersRolePill--${roleToSlug(row.role)}`}>{row.role}</span>
+                      </td>
+                      <td className="contributionsAmountCell">{row.contributions.toLocaleString('en-US')}</td>
+                      <td className="membersActionsCell">
+                        <button
+                          type="button"
+                          className="membersRowMenuButton"
+                          aria-label={`Actions for ${row.name}`}
+                          aria-haspopup="menu"
+                          aria-expanded={rowActionMenu?.id === row.id}
+                          data-members-actions-trigger={row.id}
+                          onClick={(e) => openRowActionMenu(e, row.id)}
+                        >
+                          <img src="/dashboard-icons/more-vertical.svg" alt="" width={20} height={20} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {padBottom > 0 ? (
+                  <tr className="membersTableVirtualPadRow" aria-hidden="true">
+                    <td
+                      className="membersTableVirtualSpacer"
+                      colSpan={MEMBERS_TABLE_COL_COUNT}
+                      style={{ height: padBottom }}
+                    />
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>

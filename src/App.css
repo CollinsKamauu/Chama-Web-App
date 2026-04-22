@@ -1253,6 +1253,16 @@ span.dateChipStatic {
   text-align: right;
 }
 
+/* Vertical windowing (MembersPage): spacer rows must not affect column layout */
+.membersTable .membersTableVirtualPadRow td.membersTableVirtualSpacer {
+  padding: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+  vertical-align: top;
+  line-height: 0;
+  font-size: 0;
+}
+
 .membersActionsCell {
   text-align: center;
   vertical-align: middle;

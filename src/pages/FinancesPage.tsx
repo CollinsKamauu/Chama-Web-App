@@ -14,6 +14,7 @@ import {
   blobDownloadNeedsFollowingUserGesture,
   downloadBlob,
   formatExportStamp,
+  savePreparedBlobAsFile,
 } from '../lib/contributionsExport/download'
 import { maskPhoneLastSixDigits } from '../lib/contributionsExport/maskPhone'
 import { exportExpenditureCsv } from '../lib/financesExport/exportExpenditureCsv'
@@ -290,8 +291,9 @@ export default function FinancesPage() {
 
   const handleFundBalancePdf = useCallback(() => {
     if (balancePdfReadyToSave) {
-      downloadBlob(balancePdfReadyToSave.blob, balancePdfReadyToSave.filename)
+      const { blob, filename } = balancePdfReadyToSave
       setBalancePdfReadyToSave(null)
+      savePreparedBlobAsFile(blob, filename)
       return
     }
 
@@ -661,7 +663,7 @@ export default function FinancesPage() {
                 </button>
                 {balancePdfReadyToSave ? (
                   <p className="financesPdfReadyHint" role="status" aria-live="polite">
-                    PDF is ready — tap Save PDF to download.
+                    PDF is ready — tap Save PDF to download or share to Files / Drive.
                   </p>
                 ) : null}
               </div>

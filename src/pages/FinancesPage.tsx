@@ -621,7 +621,7 @@ export default function FinancesPage() {
                   disabled={fundBalancePdfBusy}
                   onClick={() => void handleFundBalancePdf()}
                 >
-                  {fundBalancePdfBusy ? 'Preparing…' : 'Download PDF'}
+                  {fundBalancePdfBusy ? 'Preparing...' : 'Download PDF'}
                 </button>
               </div>
             </div>

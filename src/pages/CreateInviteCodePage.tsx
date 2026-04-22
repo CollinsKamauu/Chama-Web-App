@@ -6,6 +6,7 @@ import { confirmInviteStub, generateInviteCodeStub } from '../lib/inviteCode/inv
 import '../App.css'
 
 type ConfirmPhase = 'idle' | 'pending' | 'done' | 'error'
+type CopyInviteState = 'idle' | 'copied' | 'error'
 
 function confirmPhaseClass(phase: ConfirmPhase): string {
   if (phase === 'pending') return ' settingsActionButton--pending'
@@ -31,6 +32,7 @@ export default function CreateInviteCodePage() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null)
   const [generateBusy, setGenerateBusy] = useState(false)
   const [confirmPhase, setConfirmPhase] = useState<ConfirmPhase>('idle')
+  const [copyInviteState, setCopyInviteState] = useState<CopyInviteState>('idle')
 
   const handleLogout = (evt?: MouseEvent<HTMLButtonElement>) => {
     evt?.preventDefault()
@@ -45,9 +47,22 @@ export default function CreateInviteCodePage() {
     try {
       const { code } = await generateInviteCodeStub()
       setGeneratedCode(code)
+      setCopyInviteState('idle')
       if (confirmPhase === 'error') setConfirmPhase('idle')
     } finally {
       setGenerateBusy(false)
+    }
+  }
+
+  const handleCopyInviteCode = async () => {
+    if (!generatedCode) return
+    try {
+      await navigator.clipboard.writeText(generatedCode)
+      setCopyInviteState('copied')
+      window.setTimeout(() => setCopyInviteState('idle'), 2000)
+    } catch {
+      setCopyInviteState('error')
+      window.setTimeout(() => setCopyInviteState('idle'), 2000)
     }
   }
 
@@ -104,15 +119,43 @@ export default function CreateInviteCodePage() {
                 disabled={generateBusy || confirmPhase === 'done'}
                 aria-busy={generateBusy}
               >
-                <img src="/dashboard-icons/Invite Code.svg" alt="" width={28} height={28} />
-                {generateBusy ? 'Generating…' : 'Generate Invite Code'}
+                {generateBusy ? (
+                  'Generating...'
+                ) : (
+                  <>
+                    <img src="/dashboard-icons/Invite Code.svg" alt="" width={28} height={28} />
+                    Generate Invite Code
+                  </>
+                )}
               </button>
             </div>
 
             {generatedCode ? (
               <div className="inviteCodeDisplay" aria-live="polite">
                 <span className="inviteCodeDisplayLabel">Invite code</span>
-                <code className="inviteCodeDisplayValue">{generatedCode}</code>
+                <div className="inviteCodeDisplayRow">
+                  <code className="inviteCodeDisplayValue">{generatedCode}</code>
+                  <button
+                    type="button"
+                    className="inviteCodeCopyButton"
+                    onClick={handleCopyInviteCode}
+                    aria-label={
+                      copyInviteState === 'copied'
+                        ? 'Invite code copied to clipboard'
+                        : copyInviteState === 'error'
+                          ? 'Could not copy invite code'
+                          : 'Copy invite code to clipboard'
+                    }
+                  >
+                    <img src="/dashboard-icons/clipboard.svg" alt="" width={24} height={24} />
+                  </button>
+                </div>
+                {copyInviteState === 'copied' ? (
+                  <p className="settingsFormSectionHint inviteCodeCopyFeedback">Copied to clipboard</p>
+                ) : null}
+                {copyInviteState === 'error' ? (
+                  <p className="settingsFormSectionHint inviteCodeCopyFeedback">Could not copy — try again</p>
+                ) : null}
               </div>
             ) : null}
 

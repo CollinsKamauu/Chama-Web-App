@@ -167,7 +167,7 @@ export default function ContributionsPage() {
                 disabled={exportBusy}
                 onClick={() => setExportOpen((o) => !o)}
               >
-                {exportBusy ? 'Exporting…' : 'Export'}
+                {exportBusy ? 'Exporting...' : 'Export'}
                 <img src="/dashboard-icons/chevron-down.svg" alt="" />
               </button>
               {exportOpen ? (

@@ -11,6 +11,7 @@ import SettingsPage from './pages/SettingsPage'
 import TransferFundsPage from './pages/TransferFundsPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
+import ScreenLoadOverlay from './components/ScreenLoadOverlay'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth()
@@ -104,6 +105,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScreenLoadOverlay />
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

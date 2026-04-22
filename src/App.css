@@ -2394,14 +2394,18 @@ span.dateChipStatic {
 
   .mobileNav {
     position: fixed;
-    /* Do not use 100vw for width: vw includes scrollbar gutter on mobile, so the bar can be
-       wider than the visible viewport and centering (e.g. translateX(-50%)) yields negative left. */
-    left: 0;
-    right: 0;
+    /*
+     * Anchor to visual center to avoid route-specific horizontal overflow shifting
+     * the bar outside the viewport on some mobile browsers.
+     */
+    left: 50%;
+    right: auto;
     bottom: 0;
-    width: auto;
-    max-width: 440px;
-    margin-inline: auto;
+    width: min(100%, 440px);
+    /* Prefer dynamic viewport width where supported (iOS browser chrome safe). */
+    width: min(100dvw, 440px);
+    max-width: 100%;
+    transform: translateX(-50%);
     min-width: 0;
     box-sizing: border-box;
     border-top: 1px solid #e5e7eb;
@@ -4080,6 +4084,19 @@ h2.transferFundsSectionTitle {
   margin-right: 12px;
 }
 
+.inviteCodeFormBody .inviteCodeDisplay {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 835px) {
+  .inviteCodeFormBody .inviteCodeDisplay {
+    width: 300px;
+    max-width: 100%;
+  }
+}
+
 .inviteCodeDisplay {
   margin: 0 0 20px;
   padding: 14px 16px;
@@ -4088,10 +4105,13 @@ h2.transferFundsSectionTitle {
   border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
 }
 
 .inviteCodeDisplayLabel {
+  align-self: stretch;
+  text-align: center;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -4099,13 +4119,62 @@ h2.transferFundsSectionTitle {
   color: #6b7280;
 }
 
+.inviteCodeDisplayRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
 .inviteCodeDisplayValue {
   margin: 0;
+  text-align: center;
   font-size: 17px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #111827;
   word-break: break-all;
+}
+
+.inviteCodeCopyFeedback {
+  margin: 4px 0 0;
+  width: 100%;
+  text-align: center;
+}
+
+.inviteCodeCopyButton {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  line-height: 0;
+}
+
+.inviteCodeCopyButton:hover {
+  background: rgba(32, 112, 210, 0.08);
+}
+
+.inviteCodeCopyButton:focus-visible {
+  outline: 2px solid #2070d2;
+  outline-offset: 2px;
+}
+
+.inviteCodeCopyButton:active {
+  background: rgba(32, 112, 210, 0.14);
+}
+
+.inviteCodeCopyButton img {
+  display: block;
 }
 
 .inviteCodeFormBody h2#invite-name-heading.settingsFormSectionTitle {

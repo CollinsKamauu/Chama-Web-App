@@ -269,7 +269,7 @@ export function AddMemberModal({ open, onClose, onSubmit, widthAnchorRef }: AddM
           {error ? <p className="membersModalError">{error}</p> : null}
 
           <button type="submit" className="membersModalConfirm" disabled={busy}>
-            {busy ? 'Saving…' : 'Confirm'}
+            {busy ? 'Saving...' : 'Confirm'}
           </button>
         </form>
       </div>

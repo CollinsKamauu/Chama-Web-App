@@ -245,9 +245,134 @@ a.menuItem {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   margin-bottom: 60px;
+}
+
+.contentTopBarRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: 30px;
+  margin-left: auto;
+  width: min(100%, 485px);
+}
+
+.appModeSwitch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(10px, 2.5vw, 14px);
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.appModeSwitchSideLabel {
+  font-size: clamp(13px, 3.2vw, 15px);
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.02em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.appModeSwitchTrack {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #e5e7eb;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.appModeSwitchTrack:hover {
+  border-color: #9ca3af;
+}
+
+.appModeSwitchTrack:focus-visible {
+  outline: 2px solid #1f73dc;
+  outline-offset: 3px;
+}
+
+.appModeSwitchTrack--live {
+  background: #1f73dc;
+  border-color: #1a62bd;
+}
+
+.appModeSwitchTrack--live:hover {
+  border-color: #1557a8;
+}
+
+.appModeSwitchThumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(18, 26, 39, 0.22);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.appModeSwitchTrack--live .appModeSwitchThumb {
+  transform: translateX(24px);
+}
+
+@media (max-width: 640px) {
+  /* Narrower than tablet: stack greeting + controls; beats .contentTopBarRight rules in the 1280px query. */
+  .mainContent .contentTopBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mainContent .contentTopBarRight {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-top: 16px;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .mainContent .appModeSwitch {
+    max-width: none;
+    justify-content: flex-end;
+  }
+
+  .mainContent .appModeSwitchTrack {
+    width: 56px;
+    height: 32px;
+  }
+
+  .mainContent .appModeSwitchThumb {
+    width: 26px;
+    height: 26px;
+    top: 3px;
+    left: 3px;
+  }
+
+  .mainContent .appModeSwitchTrack--live .appModeSwitchThumb {
+    transform: translateX(24px);
+  }
+
+  .mainContent .pageFilterControls {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 .mainContent h2 {
@@ -261,10 +386,8 @@ a.menuItem {
   align-items: center;
   gap: 16px;
   font-size: 14px;
-  margin-top: 30px;
-  margin-left: auto;
-  width: min(100%, 485px);
   justify-content: flex-end;
+  width: 100%;
 }
 
 .pageFilterPeriodGroup {
@@ -1840,9 +1963,13 @@ span.dateChipStatic {
     flex-wrap: wrap;
   }
 
-  .pageFilterControls {
+  .contentTopBarRight {
     margin-left: auto;
     width: min(100%, 485px);
+    justify-content: flex-end;
+  }
+
+  .pageFilterControls {
     justify-content: flex-end;
   }
 
@@ -3201,6 +3328,39 @@ span.dateChipStatic {
   letter-spacing: -0.02em;
   color: #111827;
   font-variant-numeric: tabular-nums;
+}
+
+.transferFundsBalanceHint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #b45309;
+}
+
+.transferFundsBalanceRetry {
+  margin-left: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1d4ed8;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.transferFundsBalanceRetry:hover,
+.transferFundsBalanceRetry:focus-visible {
+  color: #1e3a8a;
+}
+
+.transferFundsSendError {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #b91c1c;
+  text-align: center;
+  max-width: 320px;
 }
 
 .transferFundsFormCard {

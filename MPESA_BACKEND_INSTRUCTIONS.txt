@@ -1,0 +1,42 @@
+M-Pesa B2C integration — backend merge checklist for Milestone Chama
+====================================================================
+
+This repository is a Vite + React SPA, not Next.js App Router. Server-only Daraja logic lives under `server/` and is started locally with `npm run dev:mpesa-api` (or run Vite + API together: `npm run dev:full`). In production, mount the same routes on your Node host (e.g. the existing Express app on Render that already imports `mpesa.ts`).
+
+Note on `src/lib/mpesa-config.ts` vs `server/lib/mpesa-config.ts`:
+  - `server/lib/mpesa-config.ts` validates `MPESA_*` secrets from `process.env` and must never be imported from `src/` (so Vite never bundles credentials).
+  - `src/lib/mpesa-config.ts` only exposes public HTTP paths for the SPA.
+
+1) Environment variables
+   - Copy `.env.example` to `.env` on the server host. Never expose `MPESA_CONSUMER_SECRET`, `MPESA_SECURITY_CREDENTIAL`, or `DATABASE_URL` to the frontend.
+   - Replace `MPESA_INITIATOR_NAME` and `MPESA_SECURITY_CREDENTIAL` with values from the Safaricom developer portal (Security Credential is the encrypted initiator password).
+   - All `MPESA_*_RESULT_URL` and `MPESA_*_QUEUE_TIMEOUT_URL` values must be valid **HTTPS** URLs reachable from Safaricom’s network (use ngrok for local dev).
+
+2) Prisma schema and database
+   - New models: `MpesaB2cDisbursement`, `MpesaWorkingBalanceCache` in `prisma/schema.prisma`.
+   - On the PostgreSQL instance backing this app, run: `npx prisma migrate dev --name mpesa_b2c` (or `prisma migrate deploy` in CI/production).
+   - Ensure `DATABASE_URL` is set on the machine running the M-Pesa API routes.
+
+3) Express routes to port into `milestone-chama-backend`
+   - Import and mount `mpesaApiRouter` from this repo’s `server/routes/mpesaApi.ts` at path prefix `/api/mpesa` (same paths as local: `/disburse`, `/status/:id`, `/balance`, `POST /webhooks/account-balance`).
+   - Alternatively, re-implement the handlers by copying the route logic and `server/services/mpesaService.ts`, `server/lib/mpesa-config.ts`, and `server/lib/normalizeMsisdn.ts`.
+   - Register **additional** Safaricom callbacks on production if you use new URLs:
+     - B2C `ResultURL` / `QueueTimeOutURL` (must match `MPESA_B2C_*` env values).
+     - Transaction status `ResultURL` / `QueueTimeOutURL`.
+     - Account balance `ResultURL` / `QueueTimeOutURL` — the stub `POST /api/mpesa/webhooks/account-balance` parses `AccountBalance` from the callback body and updates `MpesaWorkingBalanceCache`.
+
+4) Dependencies (Node server)
+   - `@prisma/client`, `prisma` (dev), `express`, `cors`, `dotenv`, `ky`, `tsx` (optional for watch mode).
+   - Run `npx prisma generate` after schema changes.
+
+5) Frontend / Vite dev proxy
+   - `vite.config.ts` proxies `/api/mpesa` to `VITE_MPESA_API_PROXY_TARGET` (default `http://127.0.0.1:8787`).
+   - For production SPA builds, either serve the API from the same origin as the SPA or set `VITE_API_BASE_URL` to a backend that includes these routes (the browser never calls Daraja directly).
+
+6) Security and operations
+   - Protect `POST /api/mpesa/disburse` with your existing JWT/session middleware before go-live.
+   - B2C final outcomes are asynchronous; polling uses Daraja `TransactionStatusQuery` and may still need B2C `ResultURL` callbacks for authoritative reconciliation — extend webhooks as needed.
+   - Rotate Daraja credentials if they were pasted into chat logs or committed by mistake.
+
+7) Short code note
+   - The value provided included a trailing space and “1”; the `.env` file uses `4052377`. Confirm the correct paybill / till / organization shortcode in the portal.

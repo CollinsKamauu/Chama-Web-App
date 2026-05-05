@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppModeProvider } from './context/AppModeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import ContributionsPage from './pages/ContributionsPage'
 import FinancesPage from './pages/FinancesPage'
@@ -105,10 +106,12 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <ScreenLoadOverlay />
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AppModeProvider>
+        <ScreenLoadOverlay />
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </AppModeProvider>
     </BrowserRouter>
   )
 }

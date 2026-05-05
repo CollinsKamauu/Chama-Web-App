@@ -8,9 +8,8 @@ import {
   TRANSFER_CATEGORIES,
   type TransferFundsReviewState,
 } from '../lib/transferFunds/transferModel'
+import { useMpesaWorkingBalance } from '../hooks/useMpesaWorkingBalance'
 import '../App.css'
-
-const MOCK_BALANCE = 469_560
 
 function EyeIcon({ visible }: { visible: boolean }) {
   if (visible) {
@@ -45,6 +44,8 @@ export default function TransferFundsPage() {
   const { displayName, logout } = useAuth()
   const profileName = displayName || 'John Doe'
 
+  const { balanceKes, loading: balanceLoading, error: balanceError, refresh: refreshBalance } =
+    useMpesaWorkingBalance()
   const [balanceVisible, setBalanceVisible] = useState(false)
   const [phone, setPhone] = useState(() => seed?.phone ?? '')
   const [amount, setAmount] = useState(() => seed?.amount ?? '')
@@ -100,9 +101,27 @@ export default function TransferFundsPage() {
                   <EyeIcon visible={balanceVisible} />
                 </button>
               </div>
-              <p className="transferFundsBalanceAmount" aria-live="polite">
-                {balanceVisible ? `KES ${MOCK_BALANCE.toLocaleString('en-US')}` : 'KES ********'}
+              <p
+                className="transferFundsBalanceAmount"
+                aria-live="polite"
+                title={balanceError ?? undefined}
+              >
+                {balanceVisible
+                  ? balanceLoading
+                    ? 'KES …'
+                    : balanceKes != null
+                      ? `KES ${balanceKes.toLocaleString('en-US')}`
+                      : 'KES —'
+                  : 'KES ********'}
               </p>
+              {balanceError != null && balanceVisible ? (
+                <p className="transferFundsBalanceHint" role="status">
+                  {balanceError}{' '}
+                  <button type="button" className="transferFundsBalanceRetry" onClick={() => refreshBalance()}>
+                    Retry
+                  </button>
+                </p>
+              ) : null}
             </div>
           </div>
         </article>

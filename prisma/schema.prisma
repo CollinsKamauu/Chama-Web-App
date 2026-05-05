@@ -37,3 +37,31 @@ model Transaction {
 
   @@map("transactions")
 }
+
+/// B2C disbursement initiated from the Transfer Funds flow (Daraja BusinessPayment).
+model MpesaB2cDisbursement {
+  id                       String   @id @default(cuid())
+  status                   String   // PENDING | SUBMITTED | SUCCESS | FAILED
+  phone                    String
+  amount                   Decimal  @db.Decimal(12, 2)
+  categoryId               String?
+  conversationId         String?
+  originatorConversationId String?
+  resultCode               String?
+  resultDesc               String?
+  rawSubmitResponse        Json?
+  lastQueryResponse        Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@map("mpesa_b2c_disbursements")
+}
+
+/// Last known working account balance (updated by Safaricom AccountBalance result callback).
+model MpesaWorkingBalanceCache {
+  id         String   @id
+  balanceKes Decimal? @db.Decimal(14, 2)
+  updatedAt  DateTime @updatedAt
+
+  @@map("mpesa_working_balance_cache")
+}

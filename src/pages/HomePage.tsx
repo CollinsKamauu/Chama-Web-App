@@ -1,6 +1,7 @@
 import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Pie, PieChart, ResponsiveContainer } from 'recharts'
+import { useAppMode } from '../hooks/useAppMode'
 import { useAuth } from '../context/AuthContext'
 import { DashboardChrome } from '../components/DashboardChrome'
 import { MetricPeriodDropdown, type MetricPeriod } from '../components/MetricPeriodDropdown'
@@ -137,6 +138,7 @@ function useAnimatedNumber(target: number, durationMs: number): number {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const { mode, setMode } = useAppMode()
   const { displayName, logout } = useAuth()
   const profileName = useMemo(() => displayName || 'John Doe', [displayName])
   const [pageFilterPeriod, setPageFilterPeriod] = useState<MetricPeriod>('monthly')
@@ -239,17 +241,38 @@ export default function HomePage() {
             <h2>
               {timeOfDayGreeting(new Date())}, {DASHBOARD_GREETING_NAME} 👋
             </h2>
-            <div className="pageFilterControls">
-              <MetricPeriodDropdown
-                variant="page"
-                period={pageFilterPeriod}
-                onPeriodChange={setPageFilterPeriod}
-                menuId="page-filter-period"
-              />
-              <button type="button" className="filterButton">
-                <img src="/dashboard-icons/Filter list.svg" alt="" />
-                Filter
-              </button>
+            <div className="contentTopBarRight">
+              <div className="appModeSwitch">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={mode === 'live'}
+                  aria-label={
+                    mode === 'live'
+                      ? 'Live data is on. Press to use demo data.'
+                      : 'Demo data is on. Press to use live data.'
+                  }
+                  className={`appModeSwitchTrack${mode === 'live' ? ' appModeSwitchTrack--live' : ''}`}
+                  onClick={() => setMode(mode === 'demo' ? 'live' : 'demo')}
+                >
+                  <span className="appModeSwitchThumb" />
+                </button>
+                <span className="appModeSwitchSideLabel" aria-hidden="true">
+                  {mode === 'live' ? 'Live' : 'Demo'}
+                </span>
+              </div>
+              <div className="pageFilterControls">
+                <MetricPeriodDropdown
+                  variant="page"
+                  period={pageFilterPeriod}
+                  onPeriodChange={setPageFilterPeriod}
+                  menuId="page-filter-period"
+                />
+                <button type="button" className="filterButton">
+                  <img src="/dashboard-icons/Filter list.svg" alt="" />
+                  Filter
+                </button>
+              </div>
             </div>
           </div>
 

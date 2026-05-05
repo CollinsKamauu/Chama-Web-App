@@ -1,7 +1,12 @@
-import { type MouseEvent, useEffect, useMemo, useState } from 'react'
+import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { DashboardChrome } from '../components/DashboardChrome'
+import { useAppMode } from '../hooks/useAppMode'
 import { useAuth } from '../context/AuthContext'
+import { useMpesaWorkingBalance } from '../hooks/useMpesaWorkingBalance'
+import { api } from '../lib/api'
+import { DEMO_MPESA_TRANSFER_ID } from '../lib/appMode'
+import { mpesaClientRoutes } from '../lib/mpesa-config'
 import { sendTransferMoney } from '../lib/transferFunds/sendTransferMoney'
 import {
   b2cRegisteredUserTransferFee,
@@ -10,8 +15,6 @@ import {
   type TransferFundsReviewState,
 } from '../lib/transferFunds/transferModel'
 import '../App.css'
-
-const MOCK_BALANCE = 469_560
 
 function EyeIcon({ visible }: { visible: boolean }) {
   if (visible) {
@@ -66,10 +69,16 @@ export default function ReviewTransferPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { displayName, logout } = useAuth()
+  const { mode } = useAppMode()
   const profileName = displayName || 'John Doe'
 
+  const { balanceKes, loading: balanceLoading, error: balanceError, refresh: refreshBalance } =
+    useMpesaWorkingBalance()
   const [balanceVisible, setBalanceVisible] = useState(false)
   const [sendPhase, setSendPhase] = useState<SendMoneyPhase>('idle')
+  const [disbursementId, setDisbursementId] = useState<string | null>(null)
+  const [failureDetail, setFailureDetail] = useState<string | null>(null)
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const draft = location.state as TransferFundsReviewState | null
 
@@ -88,7 +97,7 @@ export default function ReviewTransferPage() {
   const categoryMeta = useMemo(() => {
     if (!draft?.categoryId) return null
     return TRANSFER_CATEGORIES.find((c) => c.id === draft.categoryId) ?? null
-  }, [draft?.categoryId])
+  }, [draft])
 
   const handleLogout = (evt?: MouseEvent<HTMLButtonElement>) => {
     evt?.preventDefault()
@@ -97,15 +106,83 @@ export default function ReviewTransferPage() {
     navigate('/login', { replace: true })
   }
 
+  const clearPoll = () => {
+    if (pollTimerRef.current != null) {
+      clearInterval(pollTimerRef.current)
+      pollTimerRef.current = null
+    }
+  }
+
+  useEffect(() => () => clearPoll(), [])
+
+  useEffect(() => {
+    if (sendPhase !== 'processing' || disbursementId == null) {
+      clearPoll()
+      return
+    }
+
+    if (disbursementId === DEMO_MPESA_TRANSFER_ID) {
+      clearPoll()
+      let cancelled = false
+      queueMicrotask(() => {
+        if (cancelled) return
+        setSendPhase('sent')
+        setFailureDetail(null)
+        refreshBalance()
+      })
+      return () => {
+        cancelled = true
+      }
+    }
+
+    const pollOnce = async () => {
+      const r = await api.get<{
+        status?: string
+        resultDesc?: string | null
+      }>(mpesaClientRoutes.status(disbursementId))
+      if (!r.success) return
+      const st = typeof r.status === 'string' ? r.status : ''
+      if (st === 'SUCCESS') {
+        clearPoll()
+        setSendPhase('sent')
+        setFailureDetail(null)
+        refreshBalance()
+        return
+      }
+      if (st === 'FAILED') {
+        clearPoll()
+        setSendPhase('failed')
+        setFailureDetail(typeof r.resultDesc === 'string' ? r.resultDesc : 'Transfer failed.')
+      }
+    }
+
+    void pollOnce()
+    pollTimerRef.current = setInterval(() => {
+      void pollOnce()
+    }, 3000)
+
+    return () => clearPoll()
+  }, [sendPhase, disbursementId, refreshBalance])
+
   const handleSendMoney = async () => {
     if (!isReviewStateValid(draft)) return
     if (sendPhase === 'processing' || sendPhase === 'sent') return
+    setFailureDetail(null)
+    setDisbursementId(null)
     setSendPhase('processing')
     try {
-      const { ok } = await sendTransferMoney(draft)
-      setSendPhase(ok ? 'sent' : 'failed')
+      const result = await sendTransferMoney(draft, mode)
+      if (!result.ok) {
+        clearPoll()
+        setSendPhase('failed')
+        setFailureDetail(result.message)
+        return
+      }
+      setDisbursementId(result.id)
     } catch {
+      clearPoll()
       setSendPhase('failed')
+      setFailureDetail('Something went wrong. Try again.')
     }
   }
 
@@ -145,9 +222,27 @@ export default function ReviewTransferPage() {
                   <EyeIcon visible={balanceVisible} />
                 </button>
               </div>
-              <p className="transferFundsBalanceAmount" aria-live="polite">
-                {balanceVisible ? `KES ${MOCK_BALANCE.toLocaleString('en-US')}` : 'KES ********'}
+              <p
+                className="transferFundsBalanceAmount"
+                aria-live="polite"
+                title={balanceError ?? undefined}
+              >
+                {balanceVisible
+                  ? balanceLoading
+                    ? 'KES …'
+                    : balanceKes != null
+                      ? `KES ${balanceKes.toLocaleString('en-US')}`
+                      : 'KES —'
+                  : 'KES ********'}
               </p>
+              {balanceError != null && balanceVisible ? (
+                <p className="transferFundsBalanceHint" role="status">
+                  {balanceError}{' '}
+                  <button type="button" className="transferFundsBalanceRetry" onClick={() => refreshBalance()}>
+                    Retry
+                  </button>
+                </p>
+              ) : null}
             </div>
           </div>
         </article>
@@ -204,10 +299,16 @@ export default function ReviewTransferPage() {
                 disabled={sendPhase === 'processing' || sendPhase === 'sent'}
                 aria-busy={sendPhase === 'processing'}
                 aria-live="polite"
+                title={failureDetail ?? undefined}
                 onClick={handleSendMoney}
               >
                 {sendMoneyLabel(sendPhase)}
               </button>
+              {sendPhase === 'failed' && failureDetail != null ? (
+                <p className="transferFundsSendError" role="alert">
+                  {failureDetail}
+                </p>
+              ) : null}
             </div>
           </div>
         </article>

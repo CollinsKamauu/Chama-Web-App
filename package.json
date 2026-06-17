@@ -8,8 +8,6 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:mpesa-api": "tsx watch server/index.ts",
-    "dev:full": "concurrently -n vite,mpesa -c blue,magenta \"vite\" \"tsx watch server/index.ts\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

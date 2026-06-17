@@ -2,81 +2,13 @@ import { type MouseEvent, useEffect, useLayoutEffect, useMemo, useRef, useState 
 import { useNavigate } from 'react-router-dom'
 import { Pie, PieChart, ResponsiveContainer } from 'recharts'
 import { useAppMode } from '../hooks/useAppMode'
+import { formatTrendPct, useDashboardData } from '../hooks/useDashboardData'
 import { useAuth } from '../context/AuthContext'
 import { DashboardChrome } from '../components/DashboardChrome'
 import { MetricPeriodDropdown, type MetricPeriod } from '../components/MetricPeriodDropdown'
 import '../App.css'
 
-type TransactionRow = {
-  id: string
-  date: string
-  name: string
-  category: string
-  amount: string
-  colorClass: string
-}
-
-type BalanceSlice = {
-  name: string
-  value: number
-  color: string
-}
-
-const MOCK_TX_NAMES = [
-  'Grace Muthoni',
-  'Peter Otieno',
-  'Wanjiku Njeri',
-  'James Kariuki',
-  'Amina Hassan',
-  'David Ochieng',
-  'Lucy Chebet',
-  'Samuel Njoroge',
-  'Mary Akinyi',
-  'Tom Mwenda',
-  'Ruth Wambui',
-  'Brian Mutua',
-  'Esther Adhiambo',
-  'Kevin Kamau',
-]
-
-const MOCK_TX_AMOUNTS = [
-  450, 1200, 1675, 2100, 3200, 4999, 5050, 7500, 8900, 9999, 11250, 12750, 15600, 18900, 22300, 28400,
-  33333, 44550, 50100, 67890, 725, 15440, 18200, 960, 30300, 4125, 7777, 13131,
-]
-
-const MOCK_TX_CATEGORIES: { category: string; colorClass: TransactionRow['colorClass'] }[] = [
-  { category: 'Service provider', colorClass: 'orange' },
-  { category: 'Benevolent', colorClass: 'blue' },
-  { category: 'Disbursement', colorClass: 'green' },
-  { category: 'Event', colorClass: 'yellow' },
-  { category: 'Miscellaneous', colorClass: 'gray' },
-  { category: 'Contribution', colorClass: 'blue' },
-]
-
-/** Placeholder rows until transactions load from the API. */
-const TRANSACTIONS: TransactionRow[] = MOCK_TX_AMOUNTS.map((rawAmount, i) => {
-  const day = 28 - ((i * 5) % 26)
-  const month = 2 + ((i * 3) % 2)
-  const meta = MOCK_TX_CATEGORIES[(i * 7) % MOCK_TX_CATEGORIES.length]
-  return {
-    id: `tx-${i + 1}`,
-    date: `${day}/${month}/2026`,
-    name: MOCK_TX_NAMES[(i * 11 + 4) % MOCK_TX_NAMES.length],
-    category: meta.category,
-    colorClass: meta.colorClass,
-    amount: rawAmount.toLocaleString('en-US'),
-  }
-})
-
-const BALANCE_SLICES: BalanceSlice[] = [
-  { name: 'Contributions', value: 630450, color: '#1f73dc' },
-  { name: 'Expenditure', value: 160890, color: '#ff9348' },
-]
-
 const formatKes = (value: number) => `KES ${value.toLocaleString()}`
-
-/** Placeholder name in the hero greeting; replace with sign-up / profile data when wired. */
-const DASHBOARD_GREETING_NAME = 'John'
 
 /** Device local time: morning 5:00–11:59, afternoon 12:00–17:59, evening otherwise. */
 function timeOfDayGreeting(date: Date): string {
@@ -85,9 +17,6 @@ function timeOfDayGreeting(date: Date): string {
   if (h >= 12 && h < 18) return 'Good afternoon'
   return 'Good evening'
 }
-
-/** Shown in the balance card until wired to live totals. */
-const BALANCE_CARD_AMOUNT_LABEL = 'KES 469,560'
 
 function maskBalanceAmountLabel(label: string): string {
   return label.replace(/[0-9,]/g, '*')
@@ -144,6 +73,15 @@ export default function HomePage() {
   const [pageFilterPeriod, setPageFilterPeriod] = useState<MetricPeriod>('monthly')
   const [contributionPeriod, setContributionPeriod] = useState<MetricPeriod>('monthly')
   const [expenditurePeriod, setExpenditurePeriod] = useState<MetricPeriod>('monthly')
+  const {
+    contributionSummary,
+    expenditureSummary,
+    balanceSummary,
+    balanceSlices,
+    transactions,
+    balanceAmountLabel,
+    error: dashboardError,
+  } = useDashboardData(contributionPeriod, expenditurePeriod, pageFilterPeriod)
   const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null)
   const [balanceAmountVisible, setBalanceAmountVisible] = useState(true)
   const donutWrapRef = useRef<HTMLDivElement>(null)
@@ -151,11 +89,12 @@ export default function HomePage() {
   const [contributionLabelPosition, setContributionLabelPosition] = useState<{ x: number; y: number } | null>(null)
   const [expenditureLabelPosition, setExpenditureLabelPosition] = useState<{ x: number; y: number } | null>(null)
   const totalBalanceValue = useMemo(
-    () => BALANCE_SLICES.reduce((sum, slice) => sum + slice.value, 0),
-    [],
+    () => balanceSlices.reduce((sum, slice) => sum + slice.value, 0),
+    [balanceSlices],
   )
-  const contributionValue = BALANCE_SLICES[0].value
-  const contributionSweep = (contributionValue / totalBalanceValue) * 360
+  const contributionValue = balanceSlices[0]?.value ?? 0
+  const expenditureValue = balanceSlices[1]?.value ?? 0
+  const contributionSweep = totalBalanceValue > 0 ? (contributionValue / totalBalanceValue) * 360 : 0
   const contributionStartAngle = 90
   const contributionEndAngle = contributionStartAngle - contributionSweep
   const expenditureStartAngle = contributionEndAngle
@@ -198,8 +137,8 @@ export default function HomePage() {
       }
     }
 
-    const nextContribution = getLocalCenterFromSectorName(BALANCE_SLICES[0].name)
-    const nextExpenditure = getLocalCenterFromSectorName(BALANCE_SLICES[1].name)
+    const nextContribution = getLocalCenterFromSectorName(balanceSlices[0]?.name ?? 'Contributions')
+    const nextExpenditure = getLocalCenterFromSectorName(balanceSlices[1]?.name ?? 'Expenditure')
 
     if (nextContribution) setContributionLabelPosition(nextContribution)
     if (nextExpenditure) setExpenditureLabelPosition(nextExpenditure)
@@ -232,15 +171,16 @@ export default function HomePage() {
       ro.disconnect()
       if (donutLabelRafRef.current != null) cancelAnimationFrame(donutLabelRafRef.current)
     }
-  }, [])
+  }, [balanceSlices])
 
   return (
     <DashboardChrome profileName={profileName} onLogout={handleLogout}>
       <div className="mainContent">
           <div className="contentTopBar">
             <h2>
-              {timeOfDayGreeting(new Date())}, {DASHBOARD_GREETING_NAME} 👋
+              {timeOfDayGreeting(new Date())}, {profileName.split(' ')[0] || profileName} 👋
             </h2>
+            {dashboardError ? <p className="financesInlineError">{dashboardError}</p> : null}
             <div className="contentTopBarRight">
               <div className="appModeSwitch">
                 <button
@@ -297,13 +237,19 @@ export default function HomePage() {
                 </div>
                 <div className="metricDetails">
                   <div className="valueMeta">
-                    <span className="trend positive">
-                      <img src="/dashboard-icons/arrow-up-right.svg" alt="" />
-                      15.8% 
+                    <span className={`trend ${contributionSummary.trend >= 0 ? 'positive' : 'negative'}`}>
+                      <img
+                        src={
+                          contributionSummary.trend >= 0
+                            ? '/dashboard-icons/arrow-up-right.svg'
+                            : '/dashboard-icons/arrow-down-right.svg'
+                        }
+                        alt=""
+                      />
+                      {formatTrendPct(contributionSummary.trend)}
                     </span>
-                    <span className="currency">+24,500</span>
                   </div>
-                  <p>KES 630,450</p>
+                  <p>KES {contributionSummary.total.toLocaleString('en-US')}</p>
                 </div>
               </div>
             </article>
@@ -328,13 +274,19 @@ export default function HomePage() {
                 </div>
                 <div className="metricDetails">
                   <div className="valueMeta">
-                    <span className="trend negative">
-                      <img src="/dashboard-icons/arrow-down-right.svg" alt="" />
-                      12.5%
+                    <span className={`trend ${expenditureSummary.trend <= 0 ? 'negative' : 'positive'}`}>
+                      <img
+                        src={
+                          expenditureSummary.trend <= 0
+                            ? '/dashboard-icons/arrow-down-right.svg'
+                            : '/dashboard-icons/arrow-up-right.svg'
+                        }
+                        alt=""
+                      />
+                      {formatTrendPct(expenditureSummary.trend)}
                     </span>
-                    <span className="currency">-45,700</span>
                   </div>
-                  <p>KES 160,890</p>
+                  <p>KES {expenditureSummary.total.toLocaleString('en-US')}</p>
                 </div>
               </div>
             </article>
@@ -370,11 +322,20 @@ export default function HomePage() {
                   </div>
                   <div className="balanceAmountRow">
                     <strong aria-live="polite">
-                      {balanceAmountVisible ? BALANCE_CARD_AMOUNT_LABEL : maskBalanceAmountLabel(BALANCE_CARD_AMOUNT_LABEL)}
+                      {balanceAmountVisible
+                        ? balanceAmountLabel
+                        : maskBalanceAmountLabel(balanceAmountLabel)}
                     </strong>
-                    <span className="trend positive">
-                      <img src="/dashboard-icons/arrow-up-right.svg" alt="" />
-                      15.8%
+                    <span className={`trend ${balanceSummary.trend >= 0 ? 'positive' : 'negative'}`}>
+                      <img
+                        src={
+                          balanceSummary.trend >= 0
+                            ? '/dashboard-icons/arrow-up-right.svg'
+                            : '/dashboard-icons/arrow-down-right.svg'
+                        }
+                        alt=""
+                      />
+                      {formatTrendPct(balanceSummary.trend)}
                     </span>
                     <small>Compared to last month</small>
                   </div>
@@ -385,7 +346,7 @@ export default function HomePage() {
             <div className="balanceBody">
               <div className="chartPane">
                 <div className="legend">
-                  {BALANCE_SLICES.map((slice) => (
+                  {balanceSlices.map((slice) => (
                     <span key={slice.name}>
                       <i className="dot" style={{ background: slice.color }} />
                       {slice.name}
@@ -396,7 +357,7 @@ export default function HomePage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={[BALANCE_SLICES[0]]}
+                        data={balanceSlices[0] ? [balanceSlices[0]] : []}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -407,14 +368,14 @@ export default function HomePage() {
                         endAngle={contributionEndAngle}
                         cornerRadius={6}
                         isAnimationActive={false}
-                        fill={BALANCE_SLICES[0].color}
+                        fill={balanceSlices[0]?.color ?? '#1f73dc'}
                         stroke="#ffffff"
                         strokeWidth={5}
                         onMouseEnter={() => setActiveSliceIndex(0)}
                         onMouseLeave={() => setActiveSliceIndex(null)}
                       />
                       <Pie
-                        data={[BALANCE_SLICES[1]]}
+                        data={balanceSlices[1] ? [balanceSlices[1]] : []}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -425,7 +386,7 @@ export default function HomePage() {
                         endAngle={expenditureEndAngle}
                         cornerRadius={6}
                         isAnimationActive={false}
-                        fill={BALANCE_SLICES[1].color}
+                        fill={balanceSlices[1]?.color ?? '#ff9348'}
                         stroke="#ffffff"
                         strokeWidth={5}
                         onMouseEnter={() => setActiveSliceIndex(1)}
@@ -441,7 +402,7 @@ export default function HomePage() {
                       opacity: contributionLabelPosition ? 1 : 0,
                     }}
                   >
-                    {formatKes(BALANCE_SLICES[0].value)}
+                    {formatKes(contributionValue)}
                   </span>
                   <span
                     className="donutLabel right"
@@ -451,7 +412,7 @@ export default function HomePage() {
                       opacity: expenditureLabelPosition ? 1 : 0,
                     }}
                   >
-                    {formatKes(BALANCE_SLICES[1].value)}
+                    {formatKes(expenditureValue)}
                   </span>
                   <span className="visuallyHidden">{formatKes(totalBalanceValue)} total</span>
                 </div>
@@ -478,7 +439,7 @@ export default function HomePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {TRANSACTIONS.map((row) => (
+                      {transactions.map((row) => (
                         <tr key={row.id}>
                           <td>{row.date}</td>
                           <td>{row.name}</td>

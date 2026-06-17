@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { fetchContributions } from '../api/contributions'
 import type { MetricPeriod } from '../components/MetricPeriodDropdown'
 import { METRIC_PERIOD_LABEL } from '../components/MetricPeriodDropdown'
+import { useAuth } from '../context/AuthContext'
+import { useAppMode } from './useAppMode'
 
 export type ContributionRow = {
   transactionId: string
@@ -36,7 +39,6 @@ function startOfDay(d: Date): Date {
   return x
 }
 
-/** Parse `d/m/yyyy` as local calendar date. */
 function parseContributionDateDMY(s: string): Date | null {
   const parts = s.split('/')
   if (parts.length !== 3) return null
@@ -58,14 +60,10 @@ function addDays(d: Date, delta: number): Date {
 }
 
 function rowInPeriod(rowDate: Date, period: MetricPeriod, anchor: Date): boolean {
-  if (period === 'allTime') {
-    return true
-  }
+  if (period === 'allTime') return true
   const a = startOfDay(anchor)
   const r = startOfDay(rowDate)
-  if (period === 'today') {
-    return r.getTime() === a.getTime()
-  }
+  if (period === 'today') return r.getTime() === a.getTime()
   if (period === 'last7') {
     const end = a
     const start = addDays(a, -6)
@@ -105,7 +103,6 @@ function deterministicAmount(i: number): number {
   return 500 + ((i * 7919 + 101) % 99500)
 }
 
-/** Base rows (amounts / identities); dates assigned from anchor in buildAllRows. */
 const BASE_TEMPLATES: Omit<ContributionRow, 'date'>[] = [
   { transactionId: 'UCFBP9F3N0', name: 'Juma Yusuf', phone: '+254 722 123 456', amount: 15000 },
   { transactionId: 'K9LMN2P4Q1', name: 'Michael Mathu', phone: '+254 733 987 654', amount: 24800 },
@@ -114,12 +111,11 @@ const BASE_TEMPLATES: Omit<ContributionRow, 'date'>[] = [
   { transactionId: 'F6GH7I8J9K', name: 'Grace Muthoni', phone: '+254 733 333 444', amount: 40000 },
 ]
 
-function buildAllRows(anchor: Date): ContributionRow[] {
+function buildDemoRows(anchor: Date): ContributionRow[] {
   const base: ContributionRow[] = BASE_TEMPLATES.map((t, i) => ({
     ...t,
     date: formatDMY(addDays(anchor, -i)),
   }))
-
   const extra: ContributionRow[] = Array.from({ length: 80 }, (_, i) => {
     const dayOffset = (i % 35) + Math.floor(i / 20)
     return {
@@ -130,24 +126,71 @@ function buildAllRows(anchor: Date): ContributionRow[] {
       amount: deterministicAmount(i),
     }
   })
-
   return [...base, ...extra]
 }
 
 const INITIAL_VISIBLE = 20
 
 export function useContributionsData() {
+  const { token } = useAuth()
+  const { mode } = useAppMode()
   const anchorDate = useMemo(() => startOfDay(new Date()), [])
   const [period, setPeriod] = useState<MetricPeriod>('last7')
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE)
+  const [liveRows, setLiveRows] = useState<ContributionRow[]>([])
+  const [liveTotalKes, setLiveTotalKes] = useState(0)
+  const [liveTrendPct, setLiveTrendPct] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const demoRows = useMemo(() => buildDemoRows(anchorDate), [anchorDate])
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE)
   }, [period])
 
-  const rows = useMemo(() => buildAllRows(anchorDate), [anchorDate])
+  useEffect(() => {
+    if (mode === 'demo' || !token) {
+      setLiveRows([])
+      setLiveTotalKes(0)
+      setLiveTrendPct(null)
+      setError(null)
+      setLoading(false)
+      return
+    }
 
-  const rowsInPeriod = useMemo(() => filterRowsByPeriod(rows, period, anchorDate), [rows, period, anchorDate])
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const data = await fetchContributions(period, token)
+        if (cancelled) return
+        setLiveRows(data.rows)
+        setLiveTotalKes(data.totalKes)
+        setLiveTrendPct(null)
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Could not load contributions.')
+          setLiveRows([])
+          setLiveTotalKes(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [mode, token, period])
+
+  const rows = mode === 'live' ? liveRows : demoRows
+
+  const rowsInPeriod = useMemo(() => {
+    if (mode === 'live') return rows
+    return filterRowsByPeriod(rows, period, anchorDate)
+  }, [mode, rows, period, anchorDate])
 
   const displayedRows = useMemo(
     () => rowsInPeriod.slice(0, visibleCount),
@@ -160,17 +203,15 @@ export function useContributionsData() {
     setVisibleCount(rowsInPeriod.length)
   }, [rowsInPeriod.length])
 
-  const summaryAmount = useMemo(
-    () => sumAmountsForPeriod(rows, period, anchorDate),
-    [rows, period, anchorDate],
-  )
+  const summaryAmount = useMemo(() => {
+    if (mode === 'live') return liveTotalKes
+    return sumAmountsForPeriod(rows, period, anchorDate)
+  }, [mode, liveTotalKes, rows, period, anchorDate])
 
-  const totalAmount = useMemo(
-    () => sumAmountsForPeriod(rows, period, anchorDate),
-    [rows, period, anchorDate],
-  )
+  const totalAmount = summaryAmount
 
-  const summaryTrendPct = '15.8%'
+  const summaryTrendPct =
+    mode === 'live' && liveTrendPct != null ? `${Math.abs(liveTrendPct).toFixed(1)}%` : '15.8%'
 
   const periodSubtitle = METRIC_PERIOD_LABEL[period]
 
@@ -187,5 +228,7 @@ export function useContributionsData() {
     period,
     setPeriod,
     periodSubtitle,
+    loading,
+    error,
   }
 }

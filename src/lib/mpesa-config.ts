@@ -1,9 +1,6 @@
 /**
- * M-Pesa client wiring (browser-safe: no secrets, no `MPESA_*` env reads here).
- *
- * Daraja credentials and `loadMpesaServerConfig()` live under `server/lib/mpesa-config.ts`
- * and are only loaded by the Node API process so Consumer Secret and Security Credential
- * never ship to the browser bundle.
+ * M-Pesa client routes (browser-safe: no secrets).
+ * All calls go to the production backend via `/api/mpesa/*`.
  */
 
 export const mpesaClientRoutes = {

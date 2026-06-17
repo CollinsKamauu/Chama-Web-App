@@ -14,6 +14,7 @@ export type SendTransferMoneyResult =
 export async function sendTransferMoney(
   draft: TransferFundsReviewState,
   appMode: AppMode,
+  token?: string | null,
 ): Promise<SendTransferMoneyResult> {
   const amount = parseTransferAmountInput(draft.amount)
   if (amount == null) {
@@ -25,11 +26,15 @@ export async function sendTransferMoney(
     return { ok: true, id: DEMO_MPESA_TRANSFER_ID }
   }
 
-  const res = await api.post<{ id?: string; message?: string }>(mpesaClientRoutes.disburse, {
-    phone: draft.phone.trim(),
-    amount,
-    categoryId: draft.categoryId,
-  })
+  const res = await api.post<{ id?: string; message?: string }>(
+    mpesaClientRoutes.disburse,
+    {
+      phone: draft.phone.trim(),
+      amount,
+      categoryId: draft.categoryId,
+    },
+    token ?? undefined,
+  )
 
   if (!res.success) {
     return { ok: false, message: typeof res.message === 'string' ? res.message : 'Transfer could not be started.' }

@@ -11,7 +11,7 @@ export default function SignupPage() {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  /** Captured for future invite-code API; not sent on register yet. */
+  /** Sent to POST /api/auth/register with name and inviteCode. */
   const [inviteCode, setInviteCode] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -23,7 +23,18 @@ export default function SignupPage() {
     setError(null)
     setLoading(true)
     try {
-      const data = await api.post('/api/auth/register', { name: name.trim(), email: email.trim(), password })
+      const code = inviteCode.trim()
+      if (!code) {
+        setError('Please enter your invite code.')
+        setLoading(false)
+        return
+      }
+      const data = await api.post('/api/auth/register', {
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        inviteCode: code,
+      })
       if (data.success) {
         navigate('/login?registered=1', { replace: true })
       } else {
@@ -92,6 +103,7 @@ export default function SignupPage() {
               placeholder="Enter your invite code"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value)}
+              required
             />
           </div>
 

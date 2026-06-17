@@ -26,6 +26,15 @@ export type AuthSuccess = {
   token: string
   email: string
   name?: string | null
+  role?: string | null
+}
+
+export type CurrentUser = {
+  id: string
+  email: string
+  name: string
+  role: string
+  createdAt?: string
 }
 
 function extractAuthPayload(data: Record<string, unknown>, fallbackEmail: string): AuthSuccess {
@@ -49,25 +58,56 @@ function extractAuthPayload(data: Record<string, unknown>, fallbackEmail: string
     (typeof data.name === 'string' && data.name) ||
     undefined
 
+  const roleFromUser = user && typeof user === 'object' ? user.role : undefined
+  const role =
+    (typeof roleFromUser === 'string' && roleFromUser) ||
+    (typeof data.role === 'string' && data.role) ||
+    undefined
+
   const email =
     (user && typeof user.email === 'string' && user.email) ||
     (typeof data.email === 'string' && data.email) ||
     fallbackEmail
 
-  return { token, email, name }
+  return { token, email, name, role }
 }
 
-export async function registerUser(email: string, password: string): Promise<void> {
+export async function registerUser(
+  email: string,
+  password: string,
+  name: string,
+  inviteCode: string,
+): Promise<void> {
   const base = getApiBaseUrl()
   const res = await fetch(`${base}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, name, inviteCode }),
   })
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
   if (!res.ok) {
     throw new Error(parseErrorMessage(data, `Registration failed (${res.status})`))
   }
+}
+
+export async function fetchCurrentUser(token: string): Promise<CurrentUser> {
+  const base = getApiBaseUrl()
+  const url = import.meta.env.DEV ? '/api/auth/me' : `${base}/api/auth/me`
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>
+  if (!res.ok) {
+    throw new Error(parseErrorMessage(payload, `Could not load profile (${res.status})`))
+  }
+  const data = (payload.data ?? payload) as Record<string, unknown>
+  const email = typeof data.email === 'string' ? data.email : ''
+  const name = typeof data.name === 'string' ? data.name : ''
+  const role = typeof data.role === 'string' ? data.role : ''
+  const id = typeof data.id === 'string' ? data.id : String(data.id ?? '')
+  const createdAt = typeof data.createdAt === 'string' ? data.createdAt : undefined
+  return { id, email, name, role, createdAt }
 }
 
 export async function loginUser(email: string, password: string): Promise<AuthSuccess> {
@@ -81,5 +121,10 @@ export async function loginUser(email: string, password: string): Promise<AuthSu
   if (!res.ok) {
     throw new Error(parseErrorMessage(data, `Login failed (${res.status})`))
   }
-  return extractAuthPayload(data, email)
+  const nested = data.data
+  const merged =
+    nested != null && typeof nested === 'object' && !Array.isArray(nested)
+      ? { ...data, ...(nested as Record<string, unknown>) }
+      : data
+  return extractAuthPayload(merged, email)
 }

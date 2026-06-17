@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAppMode } from './useAppMode'
+import { fetchMpesaBalance } from '../api/finances'
 import { DEMO_MOCK_WORKING_BALANCE_KES } from '../lib/appMode'
-import { api } from '../lib/api'
-import { mpesaClientRoutes } from '../lib/mpesa-config'
+import { useAppMode } from './useAppMode'
+import { useEffectiveToken } from './useEffectiveToken'
 
 export type MpesaBalanceState = {
   balanceKes: number | null
@@ -15,6 +15,7 @@ export type MpesaBalanceState = {
 
 export function useMpesaWorkingBalance(): MpesaBalanceState {
   const { mode } = useAppMode()
+  const token = useEffectiveToken()
   const [balanceKes, setBalanceKes] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [stale, setStale] = useState(true)
@@ -42,31 +43,39 @@ export function useMpesaWorkingBalance(): MpesaBalanceState {
       }
     }
 
+    if (!token) {
+      setBalanceKes(null)
+      setLoading(false)
+      setStale(true)
+      setHint(null)
+      setError('Sign in to load live M-Pesa balance.')
+      return
+    }
+
     let cancelled = false
     ;(async () => {
       setLoading(true)
       setError(null)
-      const r = await api.get<{ balanceKes?: number | null; stale?: boolean; hint?: string }>(
-        mpesaClientRoutes.balance,
-      )
-      if (cancelled) return
-      if (!r.success) {
-        setError(typeof r.message === 'string' ? r.message : 'Could not load balance.')
+      try {
+        const result = await fetchMpesaBalance(token)
+        if (cancelled) return
+        setBalanceKes(result.balanceKes)
+        setStale(result.stale)
+        setHint(result.hint ?? null)
+      } catch (err) {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Could not load balance.')
         setBalanceKes(null)
         setStale(true)
         setHint(null)
-      } else {
-        const b = r.balanceKes
-        setBalanceKes(typeof b === 'number' && Number.isFinite(b) ? b : null)
-        setStale(Boolean(r.stale))
-        setHint(typeof r.hint === 'string' ? r.hint : null)
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      setLoading(false)
     })()
     return () => {
       cancelled = true
     }
-  }, [tick, mode])
+  }, [tick, mode, token])
 
   return { balanceKes, loading, stale, hint, error, refresh }
 }

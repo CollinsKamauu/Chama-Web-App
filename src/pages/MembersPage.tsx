@@ -1,104 +1,14 @@
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { AddMemberModal, type NewMemberPayload } from '../components/AddMemberModal'
+import { AddMemberModal } from '../components/AddMemberModal'
 import { MemberRowActionsPopover } from '../components/MemberRowActionsPopover'
 import { DashboardChrome } from '../components/DashboardChrome'
+import { useAuth } from '../context/AuthContext'
+import { useMembers } from '../hooks/useMembers'
 import { maskPhoneLastSixDigits } from '../lib/contributionsExport/maskPhone'
-import type { MemberRole, MemberRow } from '../types/members'
+import type { MemberRole } from '../types/members'
 import '../App.css'
-
-const FIRST_NAMES = [
-  'Grace',
-  'Peter',
-  'Wanjiku',
-  'James',
-  'Amina',
-  'David',
-  'Lucy',
-  'Samuel',
-  'Mary',
-  'Tom',
-  'Ruth',
-  'Brian',
-  'Esther',
-  'Kevin',
-  'Lucia',
-  'Daniel',
-  'Faith',
-  'Joseph',
-  'Ann',
-  'Paul',
-]
-
-const LAST_NAMES = [
-  'Muthoni',
-  'Otieno',
-  'Njeri',
-  'Kariuki',
-  'Hassan',
-  'Ochieng',
-  'Chebet',
-  'Njoroge',
-  'Akinyi',
-  'Mwenda',
-  'Wambui',
-  'Mutua',
-  'Adhiambo',
-  'Kamau',
-  'Wangari',
-  'Kimani',
-  'Omondi',
-  'Achieng',
-  'Mwangi',
-  'Onyango',
-]
-
-/** Deterministic shuffle; first `take` indices become Board Member slots. */
-function pickRandomIndices(min: number, maxInclusive: number, take: number, seed: number): Set<number> {
-  const pool = Array.from({ length: maxInclusive - min + 1 }, (_, k) => min + k)
-  let s = seed >>> 0
-  const rnd = () => {
-    s = (Math.imul(s, 1664525) + 1013904223) >>> 0
-    return s / 4294967296
-  }
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(rnd() * (i + 1))
-    const tmp = pool[i]!
-    pool[i] = pool[j]!
-    pool[j] = tmp
-  }
-  return new Set(pool.slice(0, take))
-}
-
-function buildAllMembers(): MemberRow[] {
-  const boardMemberAt = pickRandomIndices(4, 246, 6, 20260217)
-  const rows: MemberRow[] = [
-    { id: 'm1', name: 'Juma Yusuf', phone: '+254 722 123 456', role: 'Chairperson', contributions: 120_000 },
-    { id: 'm2', name: 'Grace Muthoni', phone: '+254 733 987 654', role: 'Treasurer', contributions: 118_500 },
-    { id: 'm3', name: 'Peter Otieno', phone: '+254 711 456 789', role: 'Secretary', contributions: 95_000 },
-    { id: 'm4', name: 'Wanjiku Njeri', phone: '+254 722 111 222', role: 'Vice Chairperson', contributions: 102_400 },
-  ]
-
-  for (let i = 4; i < 247; i += 1) {
-    const role: MemberRole = boardMemberAt.has(i) ? 'Board Member' : 'Member'
-    const fn = FIRST_NAMES[(i * 3) % FIRST_NAMES.length]
-    const ln = LAST_NAMES[(i * 5) % LAST_NAMES.length]
-    const a = 700 + ((i * 13) % 100)
-    const b = 100 + ((i * 7) % 900)
-    const c = 100 + ((i * 11) % 900)
-    rows.push({
-      id: `m${i + 1}`,
-      name: `${fn} ${ln}`,
-      phone: `+254 ${a} ${b} ${c}`,
-      role,
-      contributions: 500 + ((i * 7919 + 101) % 99500),
-    })
-  }
-
-  return rows
-}
 
 const EXPORT_OPTIONS = ['PDF', 'Excel', 'Doc', 'CSV'] as const
 
@@ -148,10 +58,12 @@ export default function MembersPage() {
   const navigate = useNavigate()
   const { displayName, logout } = useAuth()
   const profileName = displayName || 'John Doe'
+  const { members, loading: membersLoading, error: membersError, addMember, changeRole, removeMember } =
+    useMembers()
 
-  const [members, setMembers] = useState<MemberRow[]>(() => buildAllMembers())
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [rowActionMenu, setRowActionMenu] = useState<{ id: string; top: number; left: number } | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const addMemberButtonRef = useRef<HTMLButtonElement>(null)
 
   const [sortColumn, setSortColumn] = useState<SortColumn>('name')
@@ -189,17 +101,9 @@ export default function MembersPage() {
       ? rowVirtualizer.getTotalSize() - virtualRows[virtualRows.length - 1].end
       : 0
 
-  const handleAddMemberSubmit = (payload: NewMemberPayload) => {
-    // TODO: POST /api/members — send { fullName, phone, role } as JSON; replace local update with server response.
-    console.info('[members API placeholder]', payload)
-    const newRow: MemberRow = {
-      id: `m${Date.now()}`,
-      name: payload.fullName,
-      phone: payload.phone,
-      role: payload.role,
-      contributions: 0,
-    }
-    setMembers((prev) => [newRow, ...prev])
+  const handleAddMemberSubmit = async (payload: Parameters<typeof addMember>[0]) => {
+    setActionError(null)
+    await addMember(payload)
   }
 
   const [exportOpen, setExportOpen] = useState(false)
@@ -278,16 +182,22 @@ export default function MembersPage() {
     setRowActionMenu((prev) => (prev?.id === memberId ? null : { id: memberId, top, left }))
   }
 
-  const handleRowChangeRole = (memberId: string, role: MemberRole) => {
-    // TODO: PATCH /api/members/:id/role
-    console.info('[members API placeholder] role change', { memberId, role })
-    setMembers((prev) => prev.map((m) => (m.id === memberId ? { ...m, role } : m)))
+  const handleRowChangeRole = async (memberId: string, role: MemberRole) => {
+    setActionError(null)
+    try {
+      await changeRole(memberId, role)
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not update role.')
+    }
   }
 
-  const handleRowDelete = (memberId: string) => {
-    // TODO: DELETE /api/members/:id
-    console.info('[members API placeholder] delete', memberId)
-    setMembers((prev) => prev.filter((m) => m.id !== memberId))
+  const handleRowDelete = async (memberId: string) => {
+    setActionError(null)
+    try {
+      await removeMember(memberId)
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not delete member.')
+    }
   }
 
   return (
@@ -318,6 +228,8 @@ export default function MembersPage() {
                 <h2 className="contributionsReportTitle">Chama Members</h2>
                 <p className="contributionsReportMeta">Total Registered Members</p>
                 <p className="membersTotalStat">{members.length.toLocaleString('en-US')} Members</p>
+                {membersError ? <p className="financesInlineError">{membersError}</p> : null}
+                {actionError ? <p className="financesInlineError">{actionError}</p> : null}
               </div>
             </div>
 
@@ -366,7 +278,21 @@ export default function MembersPage() {
                 </tr>
               </thead>
               <tbody>
-                {padTop > 0 ? (
+                {membersLoading ? (
+                  <tr>
+                    <td colSpan={MEMBERS_TABLE_COL_COUNT} className="financesTableLoading">
+                      Loading…
+                    </td>
+                  </tr>
+                ) : null}
+                {!membersLoading && sortedMembers.length === 0 ? (
+                  <tr>
+                    <td colSpan={MEMBERS_TABLE_COL_COUNT} className="financesTableLoading">
+                      No members yet.
+                    </td>
+                  </tr>
+                ) : null}
+                {!membersLoading && padTop > 0 ? (
                   <tr className="membersTableVirtualPadRow" aria-hidden="true">
                     <td
                       className="membersTableVirtualSpacer"
@@ -375,33 +301,34 @@ export default function MembersPage() {
                     />
                   </tr>
                 ) : null}
-                {virtualRows.map((vr) => {
-                  const row = sortedMembers[vr.index]!
-                  return (
-                    <tr key={row.id} data-index={vr.index} ref={rowVirtualizer.measureElement}>
-                      <td>{row.name}</td>
-                      <td>{maskPhoneLastSixDigits(row.phone)}</td>
-                      <td>
-                        <span className={`membersRolePill membersRolePill--${roleToSlug(row.role)}`}>{row.role}</span>
-                      </td>
-                      <td className="contributionsAmountCell">{row.contributions.toLocaleString('en-US')}</td>
-                      <td className="membersActionsCell">
-                        <button
-                          type="button"
-                          className="membersRowMenuButton"
-                          aria-label={`Actions for ${row.name}`}
-                          aria-haspopup="menu"
-                          aria-expanded={rowActionMenu?.id === row.id}
-                          data-members-actions-trigger={row.id}
-                          onClick={(e) => openRowActionMenu(e, row.id)}
-                        >
-                          <img src="/dashboard-icons/more-vertical.svg" alt="" width={20} height={20} />
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {padBottom > 0 ? (
+                {!membersLoading &&
+                  virtualRows.map((vr) => {
+                    const row = sortedMembers[vr.index]!
+                    return (
+                      <tr key={row.id} data-index={vr.index} ref={rowVirtualizer.measureElement}>
+                        <td>{row.name}</td>
+                        <td>{maskPhoneLastSixDigits(row.phone)}</td>
+                        <td>
+                          <span className={`membersRolePill membersRolePill--${roleToSlug(row.role)}`}>{row.role}</span>
+                        </td>
+                        <td className="contributionsAmountCell">{row.contributions.toLocaleString('en-US')}</td>
+                        <td className="membersActionsCell">
+                          <button
+                            type="button"
+                            className="membersRowMenuButton"
+                            aria-label={`Actions for ${row.name}`}
+                            aria-haspopup="menu"
+                            aria-expanded={rowActionMenu?.id === row.id}
+                            data-members-actions-trigger={row.id}
+                            onClick={(e) => openRowActionMenu(e, row.id)}
+                          >
+                            <img src="/dashboard-icons/more-vertical.svg" alt="" width={20} height={20} />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                {!membersLoading && padBottom > 0 ? (
                   <tr className="membersTableVirtualPadRow" aria-hidden="true">
                     <td
                       className="membersTableVirtualSpacer"

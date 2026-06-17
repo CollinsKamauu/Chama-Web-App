@@ -68,7 +68,7 @@ function sendMoneyLabel(phase: SendMoneyPhase): string {
 export default function ReviewTransferPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { displayName, logout } = useAuth()
+  const { displayName, logout, token } = useAuth()
   const { mode } = useAppMode()
   const profileName = displayName || 'John Doe'
 
@@ -139,7 +139,7 @@ export default function ReviewTransferPage() {
       const r = await api.get<{
         status?: string
         resultDesc?: string | null
-      }>(mpesaClientRoutes.status(disbursementId))
+      }>(mpesaClientRoutes.status(disbursementId), token ?? undefined)
       if (!r.success) return
       const st = typeof r.status === 'string' ? r.status : ''
       if (st === 'SUCCESS') {
@@ -162,7 +162,7 @@ export default function ReviewTransferPage() {
     }, 3000)
 
     return () => clearPoll()
-  }, [sendPhase, disbursementId, refreshBalance])
+  }, [sendPhase, disbursementId, refreshBalance, token])
 
   const handleSendMoney = async () => {
     if (!isReviewStateValid(draft)) return
@@ -171,7 +171,7 @@ export default function ReviewTransferPage() {
     setDisbursementId(null)
     setSendPhase('processing')
     try {
-      const result = await sendTransferMoney(draft, mode)
+      const result = await sendTransferMoney(draft, mode, token)
       if (!result.ok) {
         clearPoll()
         setSendPhase('failed')

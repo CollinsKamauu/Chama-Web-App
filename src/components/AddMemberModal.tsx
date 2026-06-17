@@ -21,7 +21,7 @@ export type NewMemberPayload = {
 type AddMemberModalProps = {
   open: boolean
   onClose: () => void
-  /** Called with validated form data. Replace with API `POST /api/members` when ready. */
+  /** Called with validated form data; parent wires POST /api/members. */
   onSubmit: (payload: NewMemberPayload) => void | Promise<void>
   /** On narrow viewports only, modal size and position align under this element (e.g. Add New Member). */
   widthAnchorRef?: RefObject<HTMLButtonElement | null>

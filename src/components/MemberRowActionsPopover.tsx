@@ -15,10 +15,8 @@ export type MemberRowActionsPopoverProps = {
   member: MemberRow
   position: { top: number; left: number }
   onClose: () => void
-  /** TODO: PATCH /api/members/:id/role when backend exists */
-  onChangeRole: (memberId: string, role: MemberRole) => void
-  /** TODO: DELETE /api/members/:id when backend exists */
-  onDelete: (memberId: string) => void
+  onChangeRole: (memberId: string, role: MemberRole) => void | Promise<void>
+  onDelete: (memberId: string) => void | Promise<void>
 }
 
 export function MemberRowActionsPopover({

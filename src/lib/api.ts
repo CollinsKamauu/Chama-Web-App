@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../api/auth'
+import { flattenApiRecord, withCamelAliases } from './api/parseApiFields'
 
 type ApiResponse<T = unknown> = {
   success: boolean
@@ -20,6 +21,23 @@ function toErrorMessage(payload: Record<string, unknown>, fallback: string): str
   return fallback
 }
 
+function normalizeSuccessPayload<T>(payload: Record<string, unknown>): ApiResponse<T> {
+  const apiPayload = payload as ApiPayload<T>
+  const flat = withCamelAliases(flattenApiRecord(apiPayload as Record<string, unknown>))
+  return {
+    ...apiPayload,
+    ...flat,
+    success: true,
+  }
+}
+
+function normalizeFailurePayload(payload: Record<string, unknown>, fallback: string): ApiResponse<never> {
+  return {
+    success: false,
+    message: toErrorMessage(payload, fallback),
+  }
+}
+
 export const api = {
   async post<T = unknown>(
     path: string,
@@ -36,17 +54,10 @@ export const api = {
       body: JSON.stringify(body),
     })
     const payload = await parseJson(response)
-    if (!response.ok) {
-      return {
-        success: false,
-        message: toErrorMessage(payload, `Request failed (${response.status})`),
-      }
+    if (!response.ok || payload.success === false) {
+      return normalizeFailurePayload(payload, `Request failed (${response.status})`)
     }
-    const apiPayload = payload as ApiPayload<T>
-    return {
-      ...apiPayload,
-      success: true,
-    }
+    return normalizeSuccessPayload<T>(payload)
   },
 
   async get<T = unknown>(path: string, token?: string): Promise<ApiResponse<T>> {
@@ -56,16 +67,43 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
     const payload = await parseJson(response)
-    if (!response.ok) {
-      return {
-        success: false,
-        message: toErrorMessage(payload, `Request failed (${response.status})`),
-      }
+    if (!response.ok || payload.success === false) {
+      return normalizeFailurePayload(payload, `Request failed (${response.status})`)
     }
-    const apiPayload = payload as ApiPayload<T>
-    return {
-      ...apiPayload,
-      success: true,
+    return normalizeSuccessPayload<T>(payload)
+  },
+
+  async patch<T = unknown>(
+    path: string,
+    body: Record<string, unknown>,
+    token?: string,
+  ): Promise<ApiResponse<T>> {
+    const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+    })
+    const payload = await parseJson(response)
+    if (!response.ok || payload.success === false) {
+      return normalizeFailurePayload(payload, `Request failed (${response.status})`)
     }
+    return normalizeSuccessPayload<T>(payload)
+  },
+
+  async delete(path: string, token?: string): Promise<ApiResponse<unknown>> {
+    const url = import.meta.env.DEV ? path : `${getApiBaseUrl()}${path}`
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    const payload = await parseJson(response)
+    if (!response.ok || payload.success === false) {
+      return normalizeFailurePayload(payload, `Request failed (${response.status})`)
+    }
+    return normalizeSuccessPayload(payload)
   },
 }

@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { loginUser, registerUser } from '../api/auth'
+import { fetchCurrentUser, loginUser, registerUser } from '../api/auth'
 import {
   getChamaOrganizationName,
   setChamaOrganizationNameInStorage,
@@ -16,32 +16,23 @@ import {
 const STORAGE_TOKEN = 'chama_token'
 const STORAGE_EMAIL = 'chama_email'
 const STORAGE_NAME = 'chama_display_name'
-/** Maps lowercase email → display name captured at sign-up until backend stores profile */
-const LOCAL_NAMES_KEY = 'chama_local_names'
-
-type LocalNameMap = Record<string, string>
-
-function readLocalNames(): LocalNameMap {
-  try {
-    const raw = localStorage.getItem(LOCAL_NAMES_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as unknown
-    if (!parsed || typeof parsed !== 'object') return {}
-    return parsed as LocalNameMap
-  } catch {
-    return {}
-  }
-}
-
-function writeLocalName(email: string, name: string) {
-  const key = email.trim().toLowerCase()
-  const map = readLocalNames()
-  map[key] = name.trim()
-  localStorage.setItem(LOCAL_NAMES_KEY, JSON.stringify(map))
-}
 
 function readStoredDisplayName(): string {
   return localStorage.getItem(STORAGE_NAME) || ''
+}
+
+async function resolveDisplayName(token: string, email: string, fallbackName?: string | null): Promise<string> {
+  try {
+    const profile = await fetchCurrentUser(token)
+    if (profile.name.trim()) return profile.name.trim()
+    if (profile.email.trim()) return profile.email.split('@')[0] || 'Member'
+  } catch {
+    /* fall through to cached / login payload */
+  }
+  if (fallbackName?.trim()) return fallbackName.trim()
+  const cached = readStoredDisplayName()
+  if (cached.trim()) return cached.trim()
+  return email.split('@')[0] || 'Member'
 }
 
 type AuthContextValue = {
@@ -52,7 +43,7 @@ type AuthContextValue = {
   setChamaOrganizationName: (name: string) => void
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  signup: (name: string, email: string, password: string, inviteCode: string) => Promise<void>
   logout: () => void
 }
 
@@ -70,11 +61,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const t = localStorage.getItem(STORAGE_TOKEN)
     const em = localStorage.getItem(STORAGE_EMAIL) || ''
     if (!t || !em) return
-    if (readStoredDisplayName().trim()) return
-    const fromMap = readLocalNames()[em.toLowerCase()]
-    const resolved = (fromMap && fromMap.trim()) || em.split('@')[0] || 'Member'
-    localStorage.setItem(STORAGE_NAME, resolved)
-    setDisplayName(resolved)
+    let cancelled = false
+    void resolveDisplayName(t, em).then((name) => {
+      if (cancelled) return
+      localStorage.setItem(STORAGE_NAME, name)
+      setDisplayName(name)
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const setChamaOrganizationName = useCallback((name: string) => {
@@ -93,13 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (loginEmail: string, password: string) => {
     const res = await loginUser(loginEmail, password)
-    const localMap = readLocalNames()
-    const fromSignup = localMap[loginEmail.trim().toLowerCase()]
-    const resolvedName =
-      (res.name && res.name.trim()) ||
-      (fromSignup && fromSignup.trim()) ||
-      res.email.split('@')[0] ||
-      'Member'
+    const resolvedName = await resolveDisplayName(res.token, res.email, res.name)
 
     localStorage.setItem(STORAGE_TOKEN, res.token)
     localStorage.setItem(STORAGE_EMAIL, res.email)
@@ -109,10 +98,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setDisplayName(resolvedName)
   }, [])
 
-  const signup = useCallback(async (name: string, signupEmail: string, password: string) => {
-    await registerUser(signupEmail, password)
-    writeLocalName(signupEmail, name)
-  }, [])
+  const signup = useCallback(
+    async (name: string, signupEmail: string, password: string, inviteCode: string) => {
+      await registerUser(signupEmail, password, name, inviteCode)
+    },
+    [],
+  )
 
   const value = useMemo<AuthContextValue>(
     () => ({

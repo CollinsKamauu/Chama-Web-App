@@ -24,9 +24,6 @@ import { buildFundBalancePdfBlob } from '../lib/financesExport/exportFundBalance
 import type { ExpenditureRow, ExpenditureType } from '../types/finances'
 import '../App.css'
 
-const EXPENDITURE_HEADER_TOTAL = 160_890
-const BALANCE_TREND_PCT = '15.8%'
-
 const EXPORT_OPTIONS = ['PDF', 'Excel', 'CSV'] as const
 
 const CHART_COLORS = ['#1f73dc', '#ff9348'] as const
@@ -114,6 +111,8 @@ export default function FinancesPage() {
     goNext,
     setPage,
     expenditureTrendPct,
+    expenditureTotalKes,
+    balanceTrendPct,
     balanceSummary,
   } = useExpenditureData()
 
@@ -351,7 +350,7 @@ export default function FinancesPage() {
                 <h2 className="contributionsReportTitle">Expenditure</h2>
                 <p className="contributionsReportMeta">{periodSubtitle}</p>
                 <div className="contributionsReportAmountRow">
-                  <span className="contributionsReportAmount">KES {EXPENDITURE_HEADER_TOTAL.toLocaleString('en-US')}</span>
+                  <span className="contributionsReportAmount">KES {expenditureTotalKes.toLocaleString('en-US')}</span>
                   <span className="trend negative">
                     <img src="/dashboard-icons/arrow-down-right.svg" alt="" />
                     {expenditureTrendPct}
@@ -506,7 +505,7 @@ export default function FinancesPage() {
                   </span>
                   <span className="trend positive">
                     <img src="/dashboard-icons/arrow-up-right.svg" alt="" />
-                    {BALANCE_TREND_PCT}
+                    {balanceTrendPct}
                   </span>
                 </div>
               </div>
